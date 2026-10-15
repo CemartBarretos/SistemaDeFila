@@ -1,0 +1,26 @@
+{
+  "name": "CEMART - Fila de Espera",
+  "short_name": "CEMART Vagas",
+  "description": "Acompanhamento e inscrição na fila de espera do CEMART Barretos",
+  "start_url": "/ProjetoCemart/index.html",
+  "scope": "/ProjetoCemart/",
+  "id": "/ProjetoCemart/",
+  "display": "standalone",
+  "background_color": "#312e81",
+  "theme_color": "#312e81",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icone-cemart.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icone-cemart.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

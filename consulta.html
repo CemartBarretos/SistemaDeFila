@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CEMART - Consultar Posição</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+  <header class="bg-indigo-900 text-white shadow-md">
+    <div class="max-w-xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="index.html" class="text-indigo-200 hover:text-white text-xs flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-chevron-left"></i> Início
+      </a>
+      <div class="flex items-center gap-2">
+        <div class="bg-white p-1 rounded-lg shadow-sm flex items-center justify-center">
+          <img src="logo-cemart.png" alt="Logo CEMART" class="h-6 w-auto object-contain">
+        </div>
+        <h1 class="font-bold text-sm">Consulta de Fila</h1>
+      </div>
+      <span class="w-16"></span>
+    </div>
+  </header>
+
+  <main class="max-w-xl mx-auto px-4 py-8 flex-1 w-full space-y-5">
+    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-6">
+      <h2 class="text-lg font-bold text-slate-900 mb-1">Verificar Situação na Fila</h2>
+      <p class="text-xs text-slate-500 mb-4">Informe o número de protocolo ou o nome completo do aluno</p>
+
+      <form id="formBusca" onsubmit="buscarFila(event)" class="flex gap-2">
+        <input type="text" id="buscaDoc" required placeholder="Ex: CEM-2026-1234 ou Nome Completo" class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs uppercase focus:ring-2 focus:ring-indigo-600 focus:bg-white focus:outline-none transition">
+        <button type="submit" id="btnBuscar" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-semibold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs cursor-pointer">
+          <i class="fa-solid fa-magnifying-glass"></i><span>Consultar</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Área com Lista de Resultados -->
+    <div id="resultadoBusca" class="hidden space-y-4"></div>
+  </main>
+
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
+    Centro Municipal de Artes de Barretos (CEMART) • Consulta Pública
+  </footer>
+
+  <!-- MODAL 1: VALIDAÇÃO DE DATA DE NASCIMENTO (COFRE) -->
+  <div id="modalValidaNasc" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 space-y-4">
+      <div class="text-center">
+        <div class="w-10 h-10 bg-indigo-50 text-indigo-700 rounded-xl flex items-center justify-center mx-auto mb-2 text-lg"><i class="fa-solid fa-lock"></i></div>
+        <h3 class="text-sm font-bold text-slate-800">Autenticação de Segurança</h3>
+        <p class="text-[11px] text-slate-500">Para atualizar os dados, confirme a data de nascimento do aluno registada na inscrição.</p>
+      </div>
+      <form onsubmit="validarNascimento(event)" class="space-y-3">
+        <input type="date" id="validaDataInput" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none text-center">
+        <p id="erroValidaNasc" class="text-[11px] text-rose-600 text-center font-medium hidden">Data de nascimento incorreta.</p>
+        <button type="submit" id="btnValidarNasc" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition cursor-pointer">Verificar Acesso</button>
+      </form>
+      <div class="text-center pt-1"><button onclick="fecharModalValida()" class="text-slate-400 hover:text-slate-600 text-[11px] font-medium cursor-pointer">Cancelar</button></div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: FORMULÁRIO DE EDIÇÃO DE DADOS -->
+  <div id="modalEdicao" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 max-h-[95vh] flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4 shrink-0">
+        <div>
+          <h3 class="text-sm font-bold text-slate-800">Atualizar Meus Dados</h3>
+          <p class="text-[10px] text-slate-500 font-mono mt-0.5" id="edicaoProtocoloTexto"></p>
+        </div>
+        <button onclick="fecharModalEdicao()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="overflow-y-auto flex-1 pr-1 pb-2">
+        <form id="formEdicao" onsubmit="salvarEdicao(event)" class="space-y-4">
+          
+          <div id="alertaBloqueioEdicao" class="hidden p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800 flex gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-amber-600 mt-0.5"></i>
+            <span>Como a sua inscrição já foi processada pela secretaria, apenas a alteração dos contactos telefónicos é permitida.</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Telefone Principal (WhatsApp) *</label>
+              <input type="tel" id="editaFone1" required maxlength="15" oninput="aplicarMascaraTelefone(this)" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Telefone 2 (Recado)</label>
+              <input type="tel" id="editaFone2" maxlength="15" oninput="aplicarMascaraTelefone(this)" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+            </div>
+          </div>
+
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+            <span class="block text-[10px] font-bold text-indigo-900 uppercase tracking-wider">Preferência de Vaga</span>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Núcleo Artístico</label>
+              <select id="editaNucleo" onchange="filtrarCursosPorNucleo()" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 font-medium">
+                <option value="">Selecione...</option><option value="Dança">Dança</option><option value="Artes">Artes</option><option value="Música">Música</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Oficina / Curso</label>
+              <select id="editaCurso" onchange="atualizarPeriodosDisponiveis()" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 disabled:bg-slate-100 disabled:text-slate-400">
+                <option value="">Selecione primeiro o Núcleo...</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Período</label>
+              <select id="editaPeriodo" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 disabled:bg-slate-100 disabled:text-slate-400">
+                <option value="">Selecione primeiro o curso...</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" id="btnSalvarEdicao" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-md transition cursor-pointer">
+            <i class="fa-solid fa-floppy-disk mr-1.5"></i> Gravar Alterações
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let protocoloAtivo = '';
+    let dataNascAtiva = '';
+    let todosCursos = [];
+
+    // Formatação de telefones
+    function aplicarMascaraTelefone(input) {
+      let v = input.value.replace(/\D/g, '');
+      if (v.length > 11) v = v.substring(0, 11);
+      if (v.length > 10) v = v.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+      else if (v.length > 6) v = v.replace(/^(\d{2})(\d{4})(\d{0,4})$/, '($1) $2-$3');
+      else if (v.length > 2) v = v.replace(/^(\d{2})(\d{0,5})$/, '($1) $2');
+      else if (v.length > 0) v = v.replace(/^(\d*)$/, '($1');
+      input.value = v;
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const { data } = await db.from('cursos').select('nome_curso, nucleo, area, manha, tarde, noite').eq('ativo', true).order('nome_curso');
+        todosCursos = data || [];
+      } catch (e) { console.error('Erro ao carregar catálogo', e); }
+    });
+
+    async function buscarFila(e) {
+      if (e) e.preventDefault();
+      const termo = document.getElementById('buscaDoc').value.trim().toUpperCase();
+      const resultadoDiv = document.getElementById('resultadoBusca');
+      const btn = document.getElementById('btnBuscar');
+
+      if (!termo) return;
+      if (termo.length < 6 && !termo.startsWith('CEM-')) {
+        resultadoDiv.classList.remove('hidden');
+        resultadoDiv.innerHTML = `<div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-center text-xs text-amber-800"><i class="fa-solid fa-triangle-exclamation text-amber-600 text-lg mb-1 block"></i>Por motivo de privacidade, digite o <strong>Protocolo completo</strong> ou o <strong>Nome Completo</strong> do aluno (mínimo de 6 caracteres).</div>`;
+        return;
+      }
+
+      resultadoDiv.classList.remove('hidden');
+      resultadoDiv.innerHTML = `<div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs text-center text-xs text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Consultando registros...</div>`;
+      btn.disabled = true;
+
+      try {
+        // LGPD: Não selecionamos a data de nascimento nem os telefones na consulta aberta
+        const { data: resultados, error } = await db.from('fila_cemart')
+          .select('id, protocolo, nome_aluno, nome_responsavel, curso, periodo, status, criado_em, nivel')
+          .or(`protocolo.eq.${termo},nome_aluno.ilike.%${termo}%`);
+
+        if (error) throw error;
+        if (!resultados || resultados.length === 0) {
+          resultadoDiv.innerHTML = `<div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-center text-xs text-amber-800"><i class="fa-solid fa-triangle-exclamation text-amber-600 text-lg mb-1 block"></i>Nenhum registro encontrado para <strong>"${termo}"</strong>.</div>`;
+          return;
+        }
+
+        resultadoDiv.innerHTML = '';
+
+        for (const item of resultados) {
+          let posicaoTexto = '—';
+          if (item.status === 'Aguardando') {
+            const { count } = await db.from('fila_cemart').select('*', { count: 'exact', head: true }).eq('curso', item.curso).eq('periodo', item.periodo).eq('status', 'Aguardando').lte('criado_em', item.criado_em);
+            if (count !== null) posicaoTexto = `${count}º lugar`;
+          }
+
+          let statusBadgeClass = 'bg-amber-100 text-amber-800 border-amber-200';
+          if (item.status === 'Convocado') statusBadgeClass = 'bg-indigo-100 text-indigo-800 border-indigo-200';
+          else if (item.status === 'Matriculado') statusBadgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+          else if (item.status.includes('Desistente')) statusBadgeClass = 'bg-rose-100 text-rose-800 border-rose-200';
+
+          const card = document.createElement('div');
+          card.className = 'bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden relative';
+          card.innerHTML = `
+            <div class="bg-slate-50 px-5 py-3.5 border-b border-slate-100 flex justify-between items-center">
+              <div><span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Protocolo</span><span class="text-xs font-mono font-bold text-slate-800">${item.protocolo}</span></div>
+              <span class="px-2.5 py-1 rounded-full text-[11px] font-bold border ${statusBadgeClass}">${item.status}</span>
+            </div>
+            <div class="p-5 space-y-2.5 text-xs">
+              <div class="flex justify-between py-1.5 border-b border-slate-100"><span class="text-slate-500">Aluno</span><span class="font-bold text-slate-900">${item.nome_aluno}</span></div>
+              ${item.nome_responsavel ? `<div class="flex justify-between py-1.5 border-b border-slate-100"><span class="text-slate-500">Responsável</span><span class="font-medium text-slate-700">${item.nome_responsavel}</span></div>` : ''}
+              <div class="flex justify-between py-1.5 border-b border-slate-100"><span class="text-slate-500">Curso</span><span class="font-medium text-slate-800">${item.curso}</span></div>
+              <div class="flex justify-between py-1.5 border-b border-slate-100"><span class="text-slate-500">Turno</span><span class="font-medium text-slate-800">${item.periodo}</span></div>
+              <div class="flex justify-between py-1.5 border-b border-slate-100 items-center"><span class="text-slate-500">Classificação</span><span class="font-extrabold text-indigo-700 text-sm">${posicaoTexto}</span></div>
+              
+              <button onclick="abrirModalValida('${item.protocolo}')" class="mt-4 w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-indigo-900 text-[11px] font-bold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-pen-to-square"></i> Atualizar Meus Dados
+              </button>
+            </div>
+          `;
+          resultadoDiv.appendChild(card);
+        }
+      } catch (err) {
+        resultadoDiv.innerHTML = `<div class="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-center text-xs text-rose-800">Erro: ${err.message}</div>`;
+      } finally { btn.disabled = false; }
+    }
+
+    // --- FLUXO DE VALIDAÇÃO E EDIÇÃO ---
+
+    function abrirModalValida(protocolo) {
+      protocoloAtivo = protocolo;
+      document.getElementById('validaDataInput').value = '';
+      document.getElementById('erroValidaNasc').classList.add('hidden');
+      document.getElementById('modalValidaNasc').classList.remove('hidden');
+      document.getElementById('modalValidaNasc').classList.add('flex');
+    }
+    
+    function fecharModalValida() {
+      document.getElementById('modalValidaNasc').classList.add('hidden');
+      document.getElementById('modalValidaNasc').classList.remove('flex');
+    }
+
+    async function validarNascimento(e) {
+      e.preventDefault();
+      const inputData = document.getElementById('validaDataInput').value;
+      const btn = document.getElementById('btnValidarNasc');
+      const erro = document.getElementById('erroValidaNasc');
+
+      btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; erro.classList.add('hidden');
+
+      try {
+        // Utiliza a função SQL para validar a data e devolver os dados privados apenas se a data for correta
+        const { data, error } = await db.rpc('obter_dados_edicao', { p_protocolo: protocoloAtivo, p_data_nasc: inputData });
+        
+        if (error || !data || data.length === 0) {
+          throw new Error('Data de nascimento incorreta.');
+        }
+
+        dataNascAtiva = inputData; // Guarda a chave para usar no salvamento
+        const registro = data[0];
+        fecharModalValida();
+        abrirModalEdicao(registro);
+      } catch (err) {
+        erro.innerText = err.message; erro.classList.remove('hidden');
+      } finally {
+        btn.disabled = false; btn.innerText = 'Verificar Acesso';
+      }
+    }
+
+    function abrirModalEdicao(reg) {
+      document.getElementById('edicaoProtocoloTexto').innerText = protocoloAtivo;
+      
+      const inF1 = document.getElementById('editaFone1'); inF1.value = reg.fone1 || ''; aplicarMascaraTelefone(inF1);
+      const inF2 = document.getElementById('editaFone2'); inF2.value = reg.fone2 || ''; aplicarMascaraTelefone(inF2);
+
+      const editaNucleo = document.getElementById('editaNucleo');
+      const editaCurso = document.getElementById('editaCurso');
+      const editaPeriodo = document.getElementById('editaPeriodo');
+      const alerta = document.getElementById('alertaBloqueioEdicao');
+
+      if (reg.status !== 'Aguardando') {
+        // Bloqueia mudança de curso se não estiver na fila
+        alerta.classList.remove('hidden');
+        editaNucleo.disabled = true; editaCurso.disabled = true; editaPeriodo.disabled = true;
+        editaCurso.innerHTML = `<option value="${reg.curso}">${reg.curso}</option>`;
+        editaPeriodo.innerHTML = `<option value="${reg.periodo}">${reg.periodo}</option>`;
+      } else {
+        // Libera edição e preenche os selects
+        alerta.classList.add('hidden');
+        editaNucleo.disabled = false; editaCurso.disabled = false; editaPeriodo.disabled = false;
+        
+        const cursoInfo = todosCursos.find(c => c.nome_curso === reg.curso);
+        if (cursoInfo && cursoInfo.nucleo) {
+          editaNucleo.value = cursoInfo.nucleo;
+          filtrarCursosPorNucleo(reg.curso, reg.periodo); // Passa os valores atuais para pre-seleção
+        } else {
+          editaNucleo.value = ''; filtrarCursosPorNucleo();
+        }
+      }
+
+      document.getElementById('modalEdicao').classList.remove('hidden');
+      document.getElementById('modalEdicao').classList.add('flex');
+    }
+
+    function fecharModalEdicao() {
+      document.getElementById('modalEdicao').classList.add('hidden'); document.getElementById('modalEdicao').classList.remove('flex');
+    }
+
+    function filtrarCursosPorNucleo(cursoAtual = null, periodoAtual = null) {
+      const nucleo = document.getElementById('editaNucleo').value;
+      const selectCurso = document.getElementById('editaCurso');
+      if (!nucleo) { selectCurso.innerHTML = '<option value="">Selecione...</option>'; selectCurso.disabled = true; return; }
+
+      const cursosDoNucleo = todosCursos.filter(c => c.nucleo === nucleo);
+      selectCurso.innerHTML = '<option value="">Selecione a oficina...</option>';
+      cursosDoNucleo.forEach(c => {
+        selectCurso.innerHTML += `<option value="${c.nome_curso}">${c.nome_curso}</option>`;
+      });
+      selectCurso.disabled = false;
+
+      if (cursoAtual) { selectCurso.value = cursoAtual; atualizarPeriodosDisponiveis(periodoAtual); } 
+      else { atualizarPeriodosDisponiveis(); }
+    }
+
+    function atualizarPeriodosDisponiveis(periodoAtual = null) {
+      const nomeCurso = document.getElementById('editaCurso').value;
+      const selectPeriodo = document.getElementById('editaPeriodo');
+      if (!nomeCurso) { selectPeriodo.innerHTML = '<option value="">Selecione...</option>'; selectPeriodo.disabled = true; return; }
+
+      const curso = todosCursos.find(c => c.nome_curso === nomeCurso);
+      selectPeriodo.innerHTML = '<option value="">Selecione o turno...</option>';
+      if (curso) {
+        if (curso.manha !== false) selectPeriodo.innerHTML += '<option value="Matutino">Manhã</option>';
+        if (curso.tarde !== false) selectPeriodo.innerHTML += '<option value="Vespertino">Tarde</option>';
+        if (curso.noite !== false) selectPeriodo.innerHTML += '<option value="Noturno">Noite</option>';
+      }
+      selectPeriodo.disabled = false;
+      if (periodoAtual) selectPeriodo.value = periodoAtual;
+    }
+
+    async function salvarEdicao(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSalvarEdicao');
+      btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Gravando...';
+
+      const f1 = document.getElementById('editaFone1').value.replace(/\D/g, '');
+      const f2 = document.getElementById('editaFone2').value.replace(/\D/g, '');
+      const c = document.getElementById('editaCurso').value || '';
+      const p = document.getElementById('editaPeriodo').value || '';
+
+      try {
+        const { data: sucesso, error } = await db.rpc('atualizar_dados_candidato', {
+          p_protocolo: protocoloAtivo, p_data_nasc: dataNascAtiva, p_fone1: f1, p_fone2: f2, p_curso: c, p_periodo: p
+        });
+
+        if (error || !sucesso) throw new Error('Não foi possível atualizar os dados. Verifique sua conexão.');
+
+        alert('Dados atualizados com sucesso!');
+        fecharModalEdicao();
+        buscarFila(); // Atualiza a consulta na tela
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-1.5"></i> Gravar Alterações';
+      }
+    }
+  </script>
+</body>
+</html>

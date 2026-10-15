@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CEMART - Portal de Fila de Espera</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Dependências Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+
+  <!-- Configurações PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#312e81">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+  <header class="bg-indigo-900 text-white shadow-md">
+    <div class="max-w-4xl mx-auto px-6 py-5 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-white p-1.5 rounded-xl shadow-sm flex items-center justify-center">
+          <img src="logo-cemart.png" alt="Logo CEMART" class="h-10 w-auto object-contain">
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight">CEMART</h1>
+          <p class="text-xs text-indigo-200">Centro Municipal de Artes de Barretos</p>
+        </div>
+      </div>
+      <span class="text-xs px-3 py-1 bg-indigo-800 rounded-full border border-indigo-700 hidden sm:block">Sistema de Vagas</span>
+    </div>
+  </header>
+
+  <main class="max-w-2xl mx-auto px-6 py-8 flex-1 w-full flex flex-col justify-center space-y-6">
+    <div id="bannerInstalacao" class="hidden bg-gradient-to-r from-indigo-700 to-indigo-900 text-white p-4 rounded-2xl shadow-md border border-indigo-500/40 flex items-center justify-between gap-3 transition">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-amber-400 text-lg shrink-0">
+          <i class="fa-solid fa-mobile-screen-button"></i>
+        </div>
+        <div>
+          <h4 class="text-xs font-bold leading-snug">Instalar App do CEMART</h4>
+          <p class="text-[11px] text-indigo-200">Acesse a fila direto pela tela do seu celular</p>
+        </div>
+      </div>
+      <button onclick="instalarAplicativo()" class="px-3.5 py-2 bg-amber-400 hover:bg-amber-300 text-indigo-950 font-bold text-xs rounded-xl shadow-xs transition shrink-0 flex items-center gap-1.5">
+        <i class="fa-solid fa-download"></i> Instalar
+      </button>
+    </div>
+
+    <div class="text-center">
+      <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Portal de Inscrições e Vagas</h2>
+      <p class="text-sm text-slate-500 mt-1">Selecione uma das opções abaixo para continuar</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+      <a href="inscricao.html" class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs hover:shadow-lg hover:border-indigo-500 transition duration-200 flex flex-col justify-between">
+        <div>
+          <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl mb-4">
+            <i class="fa-solid fa-file-signature"></i>
+          </div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Candidato</span>
+          <h3 class="text-lg font-bold text-slate-900 mt-1 mb-1">Inscrição Online</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">Cadastre-se na lista de espera para vagas e oficinas artísticas.</p>
+        </div>
+        <div class="mt-6 pt-3 border-t border-slate-100 flex items-center justify-between text-indigo-600 text-xs font-bold">
+          <span>Inscrever-se</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </div>
+      </a>
+
+      <a href="consulta.html" class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs hover:shadow-lg hover:border-indigo-500 transition duration-200 flex flex-col justify-between">
+        <div>
+          <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl mb-4">
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-amber-600">Munícipe</span>
+          <h3 class="text-lg font-bold text-slate-900 mt-1 mb-1">Consultar Posição</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">Acompanhe sua classificação na fila e prazos de convocação.</p>
+        </div>
+        <div class="mt-6 pt-3 border-t border-slate-100 flex items-center justify-between text-amber-600 text-xs font-bold">
+          <span>Ver Status</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </div>
+      </a>
+    </div>
+  </main>
+
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between px-6 max-w-4xl mx-auto w-full gap-2">
+    <p>Centro Municipal de Artes de Barretos (CEMART)</p>
+    <button onclick="abrirModalLogin()" class="text-slate-400 hover:text-indigo-600 transition flex items-center gap-1.5 text-[11px] font-semibold">
+      <i class="fa-solid fa-lock text-[10px]"></i> Acesso Secretaria
+    </button>
+  </footer>
+
+  <!-- Modal de Login Individualizado -->
+  <div id="modalLogin" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl max-w-xs w-full p-6 shadow-xl border border-slate-200 space-y-4">
+      <div class="text-center">
+        <div class="w-10 h-10 bg-indigo-50 text-indigo-700 rounded-xl flex items-center justify-center mx-auto mb-2 text-lg">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h3 class="text-sm font-bold text-slate-800">Acesso Restrito</h3>
+        <p class="text-[11px] text-slate-500">Faça login com seu e-mail institucional</p>
+      </div>
+
+      <form onsubmit="realizarLogin(event)" class="space-y-3">
+        <div>
+          <input type="email" id="emailLogin" required placeholder="Seu e-mail..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+        </div>
+        <div>
+          <input type="password" id="senhaLogin" required placeholder="Sua senha..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+        </div>
+
+        <p id="erroLogin" class="text-[11px] text-rose-600 text-center font-medium hidden">
+          Credenciais incorretas ou acesso negado.
+        </p>
+        <p id="sucessoLogin" class="text-[11px] text-emerald-600 text-center font-medium hidden"></p>
+
+        <button type="submit" id="btnEntrar" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-xs">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar
+        </button>
+
+        <div class="flex flex-col gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="primeiroAcesso()" id="btnPrimeiroAcesso" class="text-indigo-600 hover:text-indigo-800 text-[11px] font-bold transition">
+            Primeiro Acesso (Criar Senha)
+          </button>
+          <button type="button" onclick="esqueciSenha()" id="btnEsqueciSenha" class="text-slate-500 hover:text-slate-700 text-[11px] font-medium transition">
+            Esqueci minha senha
+          </button>
+        </div>
+      </form>
+
+      <div class="text-center pt-1">
+        <button onclick="fecharModalLogin()" class="text-slate-400 hover:text-slate-600 text-[11px] font-medium transition">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let deferredPrompt = null;
+    const bannerInstalacao = document.getElementById('bannerInstalacao');
+    window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; bannerInstalacao.classList.remove('hidden'); });
+    async function instalarAplicativo() { if (deferredPrompt) { deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; if (outcome === 'accepted') bannerInstalacao.classList.add('hidden'); deferredPrompt = null; } }
+
+    function abrirModalLogin() {
+      if (sessionStorage.getItem('autenticado_cemart') === 'true') { window.location.href = 'painel-gestao.html'; return; }
+      document.getElementById('erroLogin').classList.add('hidden'); document.getElementById('sucessoLogin').classList.add('hidden');
+      document.getElementById('emailLogin').value = ''; document.getElementById('senhaLogin').value = '';
+      document.getElementById('modalLogin').classList.remove('hidden'); document.getElementById('modalLogin').classList.add('flex');
+    }
+
+    function fecharModalLogin() {
+      document.getElementById('modalLogin').classList.add('hidden'); document.getElementById('modalLogin').classList.remove('flex');
+    }
+
+    async function realizarLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('emailLogin').value.trim().toLowerCase();
+      const senha = document.getElementById('senhaLogin').value;
+      const btn = document.getElementById('btnEntrar');
+      const erro = document.getElementById('erroLogin');
+
+      btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Entrando...';
+      erro.classList.add('hidden'); document.getElementById('sucessoLogin').classList.add('hidden');
+
+      try {
+        const { data: whitelist, error: whitelistError } = await db.from('usuarios_permitidos').select('email').eq('email', email).single();
+        if (whitelistError || !whitelist) throw new Error('E-mail não autorizado pela Diretoria.');
+
+        const { data, error } = await db.auth.signInWithPassword({ email: email, password: senha });
+        if (error) {
+           if (error.message.includes('Email not confirmed')) throw new Error('Confirme seu e-mail (verifique a caixa de entrada).');
+           throw new Error('E-mail ou senha incorretos.');
+        }
+
+        sessionStorage.setItem('autenticado_cemart', 'true');
+        window.location.href = 'painel-gestao.html';
+      } catch (err) {
+        erro.innerText = err.message; erro.classList.remove('hidden');
+      } finally {
+        btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar';
+      }
+    }
+
+    async function primeiroAcesso() {
+      const email = document.getElementById('emailLogin').value.trim().toLowerCase();
+      const senha = document.getElementById('senhaLogin').value;
+      const erro = document.getElementById('erroLogin');
+      const sucesso = document.getElementById('sucessoLogin');
+      const btn = document.getElementById('btnPrimeiroAcesso');
+
+      if (!email || !senha || senha.length < 6) { erro.innerText = 'Preencha o e-mail e crie uma senha (mínimo 6 caracteres).'; erro.classList.remove('hidden'); return; }
+
+      btn.innerText = 'Verificando...'; erro.classList.add('hidden'); sucesso.classList.add('hidden');
+
+      try {
+        const { data: whitelist, error: whitelistError } = await db.from('usuarios_permitidos').select('email').eq('email', email).single();
+        if (whitelistError || !whitelist) throw new Error('E-mail não está na lista de autorizados.');
+
+        const { data, error } = await db.auth.signUp({ email: email, password: senha });
+        if (error) {
+           if (error.message.includes('already registered')) throw new Error('E-mail já tem conta. Se esqueceu a senha, clique em "Esqueci".');
+           throw error;
+        }
+
+        sucesso.innerText = 'Conta criada com sucesso! Pode clicar em Entrar.';
+        sucesso.classList.remove('hidden');
+      } catch (err) {
+        erro.innerText = err.message || 'Erro ao criar conta.'; erro.classList.remove('hidden');
+      } finally { btn.innerText = 'Primeiro Acesso (Criar Senha)'; }
+    }
+
+    async function esqueciSenha() {
+      const email = document.getElementById('emailLogin').value.trim().toLowerCase();
+      const erro = document.getElementById('erroLogin');
+      const sucesso = document.getElementById('sucessoLogin');
+      const btn = document.getElementById('btnEsqueciSenha');
+
+      if (!email) { erro.innerText = 'Digite seu e-mail no campo superior primeiro.'; erro.classList.remove('hidden'); return; }
+
+      btn.innerText = 'Enviando...'; erro.classList.add('hidden'); sucesso.classList.add('hidden');
+
+      try {
+        const resetUrl = window.location.origin + window.location.pathname.replace('index.html', 'redefinir-senha.html');
+        const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: resetUrl });
+        if (error) throw error;
+
+        sucesso.innerText = 'Link enviado! Verifique seu e-mail.'; sucesso.classList.remove('hidden');
+      } catch (err) {
+        erro.innerText = 'Ocorreu um erro ao enviar o e-mail.'; erro.classList.remove('hidden');
+      } finally { btn.innerText = 'Esqueci minha senha'; }
+    }
+  </script>
+</body>
+</html>

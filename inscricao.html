@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inscrição na Fila - CEMART</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Dependências Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+  <!-- Topo -->
+  <header class="bg-indigo-900 text-white shadow-md">
+    <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-white p-1.5 rounded-xl shadow-sm flex items-center justify-center">
+          <img src="logo-cemart.png" alt="Logo CEMART" class="h-8 sm:h-10 w-auto object-contain">
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight">CEMART</h1>
+          <p class="text-xs text-indigo-200">Inscrição na Fila de Espera</p>
+        </div>
+      </div>
+      <a href="index.html" class="text-xs text-indigo-200 hover:text-white flex items-center gap-1 transition">
+        <i class="fa-solid fa-arrow-left"></i> Voltar
+      </a>
+    </div>
+  </header>
+
+  <!-- Conteúdo Principal -->
+  <main class="max-w-2xl mx-auto w-full px-4 py-8 flex-1">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200">
+      
+      <div class="mb-6 border-b border-slate-100 pb-4">
+        <h2 class="text-lg font-bold text-slate-900">Ficha de Inscrição</h2>
+        <p class="text-xs text-slate-500 mt-1">Preencha os dados do candidato para ingressar na fila de espera oficial.</p>
+      </div>
+
+      <form id="formInscricao" onsubmit="realizarInscricao(event)" class="space-y-4">
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Nome Completo do Aluno *</label>
+          <input type="text" id="nome_aluno" required placeholder="Ex: Vanessa Alves Pereira" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs uppercase focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Data de Nascimento *</label>
+            <input type="date" id="data_nasc" required onchange="verificarIdadeMinima()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Nome do Responsável (se menor)</label>
+            <input type="text" id="nome_responsavel" placeholder="Ex: Mãe, Pai ou Responsável Legal" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs uppercase focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Telefone Principal (WhatsApp) *</label>
+            <input type="tel" id="fone1" required maxlength="15" oninput="aplicarMascaraTelefone(this)" placeholder="(17) 99999-9999" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Telefone 2 (Opcional / Recado)</label>
+            <input type="tel" id="fone2" maxlength="15" oninput="aplicarMascaraTelefone(this)" placeholder="(17) 99999-9999" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          </div>
+        </div>
+
+        <!-- SELEÇÃO EM CASCATA: NÚCLEO E CURSO -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">1. Núcleo Artístico *</label>
+            <select id="nucleo" required onchange="filtrarCursosPorNucleo()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none font-medium">
+              <option value="">Selecione o Núcleo...</option>
+              <option value="Dança">🩰 Núcleo de Dança</option>
+              <option value="Artes">🎭 Núcleo de Artes</option>
+              <option value="Música">🎵 Núcleo de Música</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">2. Oficina / Curso *</label>
+            <select id="curso" required disabled onchange="atualizarPeriodosDisponiveis()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none disabled:bg-slate-100 disabled:text-slate-400">
+              <option value="">Selecione primeiro o Núcleo...</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Alertas Dinâmicos -->
+        <div id="avisoIdade" class="hidden p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800 flex items-start gap-2">
+          <i class="fa-solid fa-circle-exclamation text-amber-600 mt-0.5"></i>
+          <span id="textoAvisoIdade"></span>
+        </div>
+
+        <!-- ALERTA DE FILA CHEIA (NOVO) -->
+        <div id="avisoBloqueio" class="hidden p-3 bg-rose-50 border border-rose-200 rounded-xl text-[11px] text-rose-800 flex items-start gap-2">
+          <i class="fa-solid fa-lock text-rose-600 mt-0.5"></i>
+          <span id="textoAvisoBloqueio"></span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">3. Período de Preferência *</label>
+            <select id="periodo" required disabled class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none disabled:bg-slate-100 disabled:text-slate-400">
+              <option value="">Selecione primeiro o curso...</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Nível de Experiência *</label>
+            <select id="nivel" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+              <option value="Iniciante">Iniciante</option>
+              <option value="Intermediário">Intermediário</option>
+              <option value="Avançado">Avançado</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Botão de Envio -->
+        <div class="pt-4">
+          <button type="submit" id="btnEnviar" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-check"></i> Concluir Inscrição
+          </button>
+        </div>
+      </form>
+
+      <!-- Comprovante Gerado -->
+      <div id="sucessoBox" class="hidden mt-6 p-5 bg-emerald-50 border border-emerald-200 rounded-2xl text-center space-y-3">
+        <div class="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto text-lg"><i class="fa-solid fa-check"></i></div>
+        <h3 class="text-sm font-bold text-emerald-900">Inscrição Confirmada com Sucesso!</h3>
+        <p class="text-xs text-emerald-700">Guarde o número do seu protocolo para consulta:</p>
+        <div class="p-3 bg-white border border-emerald-200 rounded-xl font-mono text-base font-black text-indigo-900 tracking-wider inline-block"><span id="protocoloGerado">-</span></div>
+        <div class="pt-2"><button onclick="reiniciarFormulario()" class="px-4 py-2 bg-indigo-900 hover:bg-indigo-800 text-white font-semibold text-xs rounded-xl transition">Fazer Nova Inscrição</button></div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Rodapé -->
+  <footer class="py-4 text-center text-slate-400 text-xs">
+    CEMART - Centro Municipal de Artes • Sistema de Gestão de Filas
+  </footer>
+
+  <script>
+    let todosCursos = [];
+
+    document.addEventListener('DOMContentLoaded', () => { carregarCatalogoCursos(); });
+
+    function aplicarMascaraTelefone(input) {
+      let v = input.value.replace(/\D/g, '');
+      if (v.length > 11) v = v.substring(0, 11);
+      if (v.length > 10) v = v.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+      else if (v.length > 6) v = v.replace(/^(\d{2})(\d{4})(\d{0,4})$/, '($1) $2-$3');
+      else if (v.length > 2) v = v.replace(/^(\d{2})(\d{0,5})$/, '($1) $2');
+      else if (v.length > 0) v = v.replace(/^(\d*)$/, '($1');
+      input.value = v;
+    }
+
+    async function carregarCatalogoCursos() {
+      try {
+        const { data, error } = await db
+          .from('cursos')
+          .select('id_curso, nome_curso, nucleo, area, idade_minima, idade_maxima, limite_fila, manha, tarde, noite')
+          .eq('ativo', true)
+          .order('area', { ascending: true })
+          .order('nome_curso', { ascending: true });
+
+        if (error) throw error;
+        todosCursos = data || [];
+      } catch (err) { console.error('Erro ao carregar catálogo:', err); }
+    }
+
+    function filtrarCursosPorNucleo() {
+      const nucleoSelecionado = document.getElementById('nucleo').value;
+      const selectCurso = document.getElementById('curso');
+      const selectPeriodo = document.getElementById('periodo');
+
+      selectPeriodo.innerHTML = '<option value="">Selecione primeiro o curso...</option>';
+      selectPeriodo.disabled = true;
+      document.getElementById('avisoIdade').classList.add('hidden');
+      document.getElementById('avisoBloqueio').classList.add('hidden');
+      document.getElementById('btnEnviar').disabled = false;
+      document.getElementById('btnEnviar').innerHTML = '<i class="fa-solid fa-check"></i> Concluir Inscrição';
+
+      if (!nucleoSelecionado) {
+        selectCurso.innerHTML = '<option value="">Selecione primeiro o Núcleo...</option>';
+        selectCurso.disabled = true;
+        return;
+      }
+
+      const cursosDoNucleo = todosCursos.filter(c => c.nucleo === nucleoSelecionado);
+      const porArea = {};
+      cursosDoNucleo.forEach(c => {
+        const areaNome = c.area || 'Geral';
+        if (!porArea[areaNome]) porArea[areaNome] = [];
+        porArea[areaNome].push(c);
+      });
+
+      selectCurso.innerHTML = '<option value="">Selecione uma oficina...</option>';
+      for (const [area, cursos] of Object.entries(porArea)) {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = `── ${area} ──`;
+        cursos.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.nome_curso;
+          let infoIdade = '';
+          if (c.idade_minima && !c.idade_maxima) infoIdade = ` (a partir de ${c.idade_minima} anos)`;
+          if (c.idade_minima && c.idade_maxima) infoIdade = ` (${c.idade_minima} a ${c.idade_maxima} anos)`;
+          if (!c.idade_minima && c.idade_maxima) infoIdade = ` (até ${c.idade_maxima} anos)`;
+          opt.textContent = `${c.nome_curso}${infoIdade}`;
+          optgroup.appendChild(opt);
+        });
+        selectCurso.appendChild(optgroup);
+      }
+      selectCurso.disabled = false;
+    }
+
+    async function atualizarPeriodosDisponiveis() {
+      const nomeCurso = document.getElementById('curso').value;
+      const selectPeriodo = document.getElementById('periodo');
+      const btnEnviar = document.getElementById('btnEnviar');
+      const avisoBloqueio = document.getElementById('avisoBloqueio');
+      const textoBloqueio = document.getElementById('textoAvisoBloqueio');
+
+      avisoBloqueio.classList.add('hidden');
+      document.getElementById('avisoIdade').classList.add('hidden');
+      btnEnviar.disabled = false;
+      btnEnviar.innerHTML = '<i class="fa-solid fa-check"></i> Concluir Inscrição';
+
+      if (!nomeCurso) {
+        selectPeriodo.innerHTML = '<option value="">Selecione primeiro o curso...</option>';
+        selectPeriodo.disabled = true;
+        return;
+      }
+
+      const curso = todosCursos.find(c => c.nome_curso === nomeCurso);
+      if (!curso) return;
+
+      // 1. CHECAGEM DE LIMITE DA FILA
+      if (curso.limite_fila && curso.limite_fila > 0) {
+        btnEnviar.disabled = true;
+        btnEnviar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verificando disponibilidade...';
+        selectPeriodo.innerHTML = '<option value="">Aguarde...</option>';
+        selectPeriodo.disabled = true;
+
+        try {
+          const { count, error } = await db
+            .from('fila_cemart')
+            .select('*', { count: 'exact', head: true })
+            .eq('curso', curso.nome_curso)
+            .eq('status', 'Aguardando');
+
+          if (!error && count !== null && count >= curso.limite_fila) {
+            textoBloqueio.innerHTML = `<strong>Fila Lotada:</strong> A oficina de ${curso.nome_curso} atingiu o limite de ${curso.limite_fila} pessoas aguardando vaga. Inscrições temporariamente bloqueadas.`;
+            avisoBloqueio.classList.remove('hidden');
+            
+            selectPeriodo.innerHTML = '<option value="">Indisponível no momento</option>';
+            btnEnviar.innerHTML = '<i class="fa-solid fa-lock"></i> Limite Atingido';
+            return; // Impede a inscrição bloqueando tudo aqui
+          }
+        } catch (e) {
+          console.error('Erro de conexão ao checar limite:', e);
+        } finally {
+          if (avisoBloqueio.classList.contains('hidden')) {
+            btnEnviar.disabled = false;
+            btnEnviar.innerHTML = '<i class="fa-solid fa-check"></i> Concluir Inscrição';
+          }
+        }
+      }
+
+      // 2. CHECAGEM DE IDADE E EXIBIÇÃO DE TURNOS
+      verificarIdadeMinima();
+
+      selectPeriodo.innerHTML = '<option value="">Selecione o período...</option>';
+      let count = 0;
+      if (curso.manha !== false) { selectPeriodo.innerHTML += '<option value="Matutino">Manhã (Matutino)</option>'; count++; }
+      if (curso.tarde !== false) { selectPeriodo.innerHTML += '<option value="Vespertino">Tarde (Vespertino)</option>'; count++; }
+      if (curso.noite !== false) { selectPeriodo.innerHTML += '<option value="Noturno">Noite (Noturno)</option>'; count++; }
+
+      if (count === 0) {
+        selectPeriodo.innerHTML = '<option value="">Nenhum período disponível no momento</option>';
+        selectPeriodo.disabled = true;
+      } else {
+        selectPeriodo.disabled = false;
+      }
+    }
+
+    function verificarIdadeMinima() {
+      const dataNascVal = document.getElementById('data_nasc').value;
+      const nomeCurso = document.getElementById('curso').value;
+      const boxAviso = document.getElementById('avisoIdade');
+      const textoAviso = document.getElementById('textoAvisoIdade');
+      const avisoBloqueio = document.getElementById('avisoBloqueio');
+
+      // Se a fila já estiver bloqueada por lotação máxima, não exibe alerta secundário de idade
+      if (avisoBloqueio && !avisoBloqueio.classList.contains('hidden')) {
+        boxAviso.classList.add('hidden');
+        return;
+      }
+
+      if (!dataNascVal || !nomeCurso) {
+        boxAviso.classList.add('hidden');
+        return;
+      }
+
+      const curso = todosCursos.find(c => c.nome_curso === nomeCurso);
+      if (!curso) {
+        boxAviso.classList.add('hidden');
+        return;
+      }
+
+      const nasc = new Date(dataNascVal);
+      const hoje = new Date();
+      let idade = hoje.getFullYear() - nasc.getFullYear();
+      const m = hoje.getMonth() - nasc.getMonth();
+      if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+
+      let mensagem = '';
+      if (curso.idade_minima && idade < curso.idade_minima) {
+        mensagem = `Atenção: A oficina de ${curso.nome_curso} recomenda idade mínima de ${curso.idade_minima} anos (idade informada: ${idade} anos). Sua inscrição será registrada para análise pedagógica.`;
+      } else if (curso.idade_maxima && idade > curso.idade_maxima) {
+        mensagem = `Atenção: A oficina de ${curso.nome_curso} é voltada para a faixa etária até ${curso.idade_maxima} anos (idade informada: ${idade} anos). Sua inscrição será registrada para análise pedagógica.`;
+      }
+
+      if (mensagem) {
+        textoAviso.innerText = mensagem;
+        boxAviso.classList.remove('hidden');
+      } else {
+        boxAviso.classList.add('hidden');
+      }
+    }
+
+    async function realizarInscricao(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnEnviar');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Registrando inscrição...';
+
+      const nomeAluno = document.getElementById('nome_aluno').value.trim().toUpperCase();
+      const dataNasc = document.getElementById('data_nasc').value;
+      const nomeResponsavel = document.getElementById('nome_responsavel').value.trim().toUpperCase();
+      const fone1Limpo = document.getElementById('fone1').value.replace(/\D/g, '');
+      const fone2Limpo = document.getElementById('fone2').value.replace(/\D/g, '');
+      const curso = document.getElementById('curso').value;
+      const periodo = document.getElementById('periodo').value;
+      const nivel = document.getElementById('nivel').value;
+
+      const anoAtual = new Date().getFullYear();
+      const numeroAleatorio = Math.floor(1000 + Math.random() * 9000);
+      const protocolo = `CEM-${anoAtual}-${numeroAleatorio}`;
+
+      try {
+        const { error } = await db.from('fila_cemart').insert([{
+          nome_aluno: nomeAluno,
+          data_nasc: dataNasc,
+          nome_responsavel: nomeResponsavel || null,
+          fone1: fone1Limpo,
+          fone2: fone2Limpo || null,
+          curso: curso,
+          periodo: periodo,
+          nivel: nivel,
+          protocolo: protocolo,
+          status: 'Aguardando'
+        }]);
+
+        if (error) throw error;
+
+        document.getElementById('protocoloGerado').innerText = protocolo;
+        document.getElementById('formInscricao').classList.add('hidden');
+        document.getElementById('sucessoBox').classList.remove('hidden');
+
+      } catch (err) {
+        alert('Erro ao enviar inscrição. Verifique sua conexão.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Concluir Inscrição';
+      }
+    }
+
+    function reiniciarFormulario() {
+      document.getElementById('formInscricao').reset();
+      document.getElementById('curso').innerHTML = '<option value="">Selecione primeiro o Núcleo...</option>';
+      document.getElementById('curso').disabled = true;
+      document.getElementById('periodo').innerHTML = '<option value="">Selecione primeiro o curso...</option>';
+      document.getElementById('periodo').disabled = true;
+      document.getElementById('avisoIdade').classList.add('hidden');
+      document.getElementById('avisoBloqueio').classList.add('hidden');
+      document.getElementById('sucessoBox').classList.add('hidden');
+      document.getElementById('formInscricao').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>

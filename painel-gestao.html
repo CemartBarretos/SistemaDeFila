@@ -64,19 +64,22 @@
 
         <div class="flex flex-wrap items-center gap-2">
           <button onclick="abrirModalCursos()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-2 rounded-lg text-xs font-semibold transition border border-indigo-200">
-            📚 Gerir Cursos e Limites
+            📚 Cursos
+          </button>
+          <button onclick="abrirModalNucleosAreas()" class="bg-violet-50 hover:bg-violet-100 text-violet-700 px-3 py-2 rounded-lg text-xs font-semibold transition border border-violet-200">
+            🏛️ Núcleos e Áreas
           </button>
           <button onclick="abrirModalMensagemWa()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-2 rounded-lg text-xs font-semibold transition border border-emerald-200">
-            💬 Mensagem WhatsApp
+            💬 WhatsApp
           </button>
           <button onclick="abrirModalAcessos()" class="bg-amber-50 hover:bg-amber-100 text-amber-800 px-3 py-2 rounded-lg text-xs font-semibold transition border border-amber-200">
             🔑 Acessos
           </button>
           <button onclick="abrirModalTrocaSenha()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-semibold transition">
-            🔒 Alterar Senha
+            🔒 Senha
           </button>
           <button onclick="exportarCSV()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-lg text-xs font-semibold transition">
-            📥 Exportar CSV
+            📥 CSV
           </button>
           <button onclick="realizarLogout()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-2 rounded-lg text-xs font-semibold transition border border-rose-200">
             Sair
@@ -181,104 +184,90 @@
     </main>
   </div>
 
-  <!-- ================= MODAL: MENSAGEM WHATSAPP ================= -->
-  <div id="modalMensagemWa" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 space-y-4">
-      <div class="flex items-center justify-between border-b pb-3">
-        <h3 class="font-bold text-lg text-slate-800">💬 Configurar Mensagem do WhatsApp</h3>
-        <button onclick="fecharModalMensagemWa()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
-      </div>
-      <p class="text-xs text-slate-600">
-        Edite abaixo o modelo de mensagem utilizado na convocação. Mantenha os marcadores
-        <code class="bg-slate-100 px-1 py-0.5 rounded font-bold text-indigo-700">{nome}</code>,
-        <code class="bg-slate-100 px-1 py-0.5 rounded font-bold text-indigo-700">{curso}</code>,
-        <code class="bg-slate-100 px-1 py-0.5 rounded font-bold text-indigo-700">{periodo}</code> e
-        <code class="bg-slate-100 px-1 py-0.5 rounded font-bold text-indigo-700">{protocolo}</code>
-        para preenchimento automático dos dados de cada candidato.
-      </p>
-      <textarea id="campoTextoWa" rows="11"
-        class="w-full p-3 rounded-lg border border-slate-300 text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
-      <div class="flex justify-end gap-2 pt-2">
-        <button onclick="fecharModalMensagemWa()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">
-          Cancelar
-        </button>
-        <button onclick="salvarMensagemWa()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow">
-          Salvar Modelo no Banco
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= MODAL: GERIR CURSOS E LIMITES ================= -->
+  <!-- ================= MODAL: CATÁLOGO DE CURSOS ================= -->
   <div id="modalCursos" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-xl max-w-4xl w-full p-6 max-h-[90vh] flex flex-col">
-      <div class="flex items-center justify-between border-b pb-3 mb-4">
-        <h3 class="font-bold text-lg text-slate-800">📚 Catálogo de Cursos e Limite de Filas</h3>
-        <button onclick="fecharModalCursos()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+    <div class="bg-white rounded-3xl shadow-2xl max-w-5xl w-full p-6 max-h-[92vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+        <h3 class="font-bold text-lg text-slate-800">Catálogo de Cursos e Limite de Filas</h3>
+        <button onclick="fecharModalCursos()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
       </div>
 
-      <!-- Formulário para Adicionar / Atualizar Curso -->
-      <form id="formCurso" onsubmit="salvarCurso(event)" class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+      <form id="formCurso" onsubmit="salvarCurso(event)" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-5 space-y-3">
         <input type="hidden" id="cursoIdEdicao" />
-        <div class="md:col-span-2">
-          <label class="font-semibold text-slate-600 block mb-1">Nome do Curso / Oficina *</label>
-          <input type="text" id="cursoNome" required placeholder="Ex: Violão" class="w-full px-3 py-1.5 rounded border border-slate-300" />
-        </div>
-        <div>
-          <label class="font-semibold text-slate-600 block mb-1">Núcleo *</label>
-          <input type="text" id="cursoNucleo" required placeholder="Ex: Música, Dança, Artes" class="w-full px-3 py-1.5 rounded border border-slate-300" />
-        </div>
-        <div>
-          <label class="font-semibold text-slate-600 block mb-1">Área</label>
-          <input type="text" id="cursoArea" placeholder="Ex: Cordas, Artes Visuais" class="w-full px-3 py-1.5 rounded border border-slate-300" />
-        </div>
-        <div>
-          <label class="font-semibold text-slate-600 block mb-1">Idade Mínima</label>
-          <input type="number" id="cursoIdadeMin" placeholder="Ex: 7" class="w-full px-3 py-1.5 rounded border border-slate-300" />
-        </div>
-        <div>
-          <label class="font-semibold text-slate-600 block mb-1">Idade Máxima</label>
-          <input type="number" id="cursoIdadeMax" placeholder="Vazio = Sem limite" class="w-full px-3 py-1.5 rounded border border-slate-300" />
-        </div>
-        <div>
-          <label class="font-semibold text-slate-600 block mb-1">Limite na Fila (Vagas)</label>
-          <input type="number" id="cursoLimiteFila" placeholder="Vazio/0 = Ilimitado" class="w-full px-3 py-1.5 rounded border border-slate-300" />
-        </div>
-        <div class="flex flex-col justify-center gap-1">
-          <span class="font-semibold text-slate-600">Turnos Oferecidos:</span>
-          <div class="flex items-center gap-3">
-            <label class="flex items-center gap-1"><input type="checkbox" id="cursoManha" checked /> Manhã</label>
-            <label class="flex items-center gap-1"><input type="checkbox" id="cursoTarde" checked /> Tarde</label>
-            <label class="flex items-center gap-1"><input type="checkbox" id="cursoNoite" checked /> Noite</label>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Nome do Curso / Oficina *</label>
+            <input type="text" id="cursoNome" required placeholder="Ex: Violão"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Núcleo *</label>
+            <select id="cursoNucleo" required onchange="atualizarSelectAreasForm()"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <option value="">Selecione o Núcleo...</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Área (Categoria)</label>
+            <select id="cursoArea"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <option value="">Selecione o Núcleo primeiro...</option>
+            </select>
           </div>
         </div>
-        <div class="md:col-span-4 flex items-center justify-between pt-2 border-t border-slate-200">
-          <label class="flex items-center gap-2 font-semibold text-slate-700">
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-end">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Idade Mínima</label>
+            <input type="number" id="cursoIdMin" placeholder="Ex: 0"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Idade Máxima</label>
+            <input type="number" id="cursoIdMax" placeholder="Vazio = Sem limite"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Limite na Fila (Vagas)</label>
+            <input type="number" id="cursoLimite" placeholder="0 = Sem limite"
+              class="w-full px-3 py-2 rounded-xl border border-amber-300 text-xs bg-amber-50/50 text-amber-900 font-semibold focus:ring-2 focus:ring-amber-400 focus:outline-none" />
+          </div>
+          <div class="flex flex-col justify-end">
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Turnos Oferecidos:</label>
+            <div class="flex items-center gap-3 text-xs py-2">
+              <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="cursoManha" checked /> Manhã</label>
+              <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="cursoTarde" checked /> Tarde</label>
+              <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="cursoNoite" checked /> Noite</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between pt-2 border-t border-slate-200 gap-2">
+          <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
             <input type="checkbox" id="cursoAtivo" checked /> Curso Ativo para Inscrições
           </label>
           <div class="flex gap-2">
-            <button type="button" onclick="limparFormCurso()" class="px-3 py-1.5 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold">
+            <button type="button" onclick="limparFormCurso()" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold transition">
               Limpar
             </button>
-            <button type="submit" class="px-4 py-1.5 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow">
+            <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow transition">
               Salvar Curso
             </button>
           </div>
         </div>
       </form>
 
-      <!-- Lista de Cursos -->
-      <div class="overflow-y-auto flex-1 border border-slate-200 rounded-xl">
+      <div class="overflow-y-auto flex-1 border border-slate-200 rounded-2xl">
         <table class="w-full text-left text-xs border-collapse">
           <thead class="bg-slate-100 text-slate-600 uppercase sticky top-0">
             <tr>
-              <th class="p-2.5">Curso</th>
-              <th class="p-2.5">Núcleo / Área</th>
-              <th class="p-2.5">Turnos</th>
-              <th class="p-2.5">Idade</th>
-              <th class="p-2.5">Limite Fila</th>
-              <th class="p-2.5">Status</th>
-              <th class="p-2.5 text-right">Ações</th>
+              <th class="p-3">Curso</th>
+              <th class="p-3">Núcleo / Área</th>
+              <th class="p-3">Turnos</th>
+              <th class="p-3">Idade</th>
+              <th class="p-3">Limite Fila</th>
+              <th class="p-3">Status</th>
+              <th class="p-3 text-right">Ações</th>
             </tr>
           </thead>
           <tbody id="listaCursosCorpo" class="divide-y divide-slate-200"></tbody>
@@ -287,7 +276,68 @@
     </div>
   </div>
 
-  <!-- ================= MODAL: ACESSOS PERMITIDOS ================= -->
+  <!-- ================= MODAL: GESTÃO DE NÚCLEOS E ÁREAS ================= -->
+  <div id="modalNucleosAreas" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] flex flex-col space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-lg text-slate-800">🏛️ Gestão de Núcleos e Áreas</h3>
+        <button onclick="fecharModalNucleosAreas()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+      </div>
+
+      <!-- Abas Internas / Divisor -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-y-auto">
+        <!-- Coluna de Núcleos -->
+        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col space-y-3">
+          <h4 class="font-bold text-xs uppercase text-slate-600">Núcleos Culturais</h4>
+          <form onsubmit="adicionarNucleo(event)" class="flex gap-2">
+            <input type="text" id="novoNucleoNome" required placeholder="Novo núcleo..."
+              class="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-violet-500 focus:outline-none bg-white" />
+            <button type="submit" class="bg-violet-600 hover:bg-violet-700 text-white px-3 py-2 rounded-xl text-xs font-semibold shadow">Adicionar</button>
+          </form>
+          <div class="flex-1 overflow-y-auto bg-white border border-slate-200 rounded-xl p-2 max-h-48">
+            <ul id="listaNucleosModalCorpo" class="divide-y divide-slate-100 text-xs"></ul>
+          </div>
+        </div>
+
+        <!-- Coluna de Áreas -->
+        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col space-y-3">
+          <h4 class="font-bold text-xs uppercase text-slate-600">Áreas por Núcleo</h4>
+          <form onsubmit="adicionarArea(event)" class="space-y-2">
+            <select id="selectNucleoAreaModal" required onchange="renderizarListaAreasModal()"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white focus:ring-2 focus:ring-violet-500 focus:outline-none">
+              <option value="">Selecione o Núcleo...</option>
+            </select>
+            <div class="flex gap-2">
+              <input type="text" id="novaAreaNome" required placeholder="Nome da área (ex: Cordas)..."
+                class="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-violet-500 focus:outline-none bg-white" />
+              <button type="submit" class="bg-violet-600 hover:bg-violet-700 text-white px-3 py-2 rounded-xl text-xs font-semibold shadow">Adicionar</button>
+            </div>
+          </form>
+          <div class="flex-1 overflow-y-auto bg-white border border-slate-200 rounded-xl p-2 max-h-48">
+            <ul id="listaAreasModalCorpo" class="divide-y divide-slate-100 text-xs"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: MENSAGEM WHATSAPP ================= -->
+  <div id="modalMensagemWa" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-lg text-slate-800">💬 Configurar Mensagem do WhatsApp</h3>
+        <button onclick="fecharModalMensagemWa()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+      </div>
+      <textarea id="campoTextoWa" rows="11"
+        class="w-full p-3 rounded-lg border border-slate-300 text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="fecharModalMensagemWa()" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold">Cancelar</button>
+        <button onclick="salvarMensagemWa()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow">Salvar no Banco</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: ACESSOS ================= -->
   <div id="modalAcessos" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
@@ -297,9 +347,7 @@
       <form onsubmit="adicionarEmailPermitido(event)" class="flex gap-2">
         <input type="email" id="novoEmailPermitido" required placeholder="novo.servidor@barretos.sp.gov.br"
           class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm" />
-        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-semibold">
-          Autorizar
-        </button>
+        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-semibold">Autorizar</button>
       </form>
       <ul id="listaEmailsPermitidos" class="divide-y divide-slate-200 max-h-60 overflow-y-auto text-sm"></ul>
     </div>
@@ -326,12 +374,8 @@
           <input type="password" id="confirmarNovaSenha" required minlength="6" class="w-full px-3 py-2 rounded-lg border border-slate-300" />
         </div>
         <div class="flex justify-end gap-2 pt-2">
-          <button type="button" onclick="fecharModalTrocaSenha()" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold">
-            Cancelar
-          </button>
-          <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold">
-            Atualizar Senha
-          </button>
+          <button type="button" onclick="fecharModalTrocaSenha()" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold">Cancelar</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold">Atualizar Senha</button>
         </div>
       </form>
     </div>
@@ -339,7 +383,6 @@
 
   <!-- ================= SCRIPTS E LÓGICA DO SISTEMA ================= -->
   <script>
-    // Lista de e-mails com visão de auditoria (Diretoria e Super Admin)
     const emailsDaDiretoria = [
       'ca.gasparetto@gmail.com',
       'caggonca@trf3.jus.br',
@@ -347,7 +390,6 @@
       'cemart@barretos.sp.gov.br'
     ];
 
-    // Mensagem padrão de segurança caso a tabela config_sistema ainda não responda
     const MENSAGEM_WA_PADRAO = `*CEMART - CENTRO MUNICIPAL DE ARTES*
 *CONVOCAÇÃO DE VAGA*
 
@@ -363,9 +405,10 @@ Atenciosamente,
     let usuarioLogado = null;
     let listaFilaCompleta = [];
     let listaCursosCompleta = [];
+    let listaNucleosCompleta = [];
+    let listaAreasCompleta = [];
     let mensagemWaCache = MENSAGEM_WA_PADRAO;
 
-    // Utilitário de proteção contra XSS
     function escaparHTML(texto) {
       if (texto === null || texto === undefined) return '';
       return String(texto)
@@ -376,7 +419,6 @@ Atenciosamente,
         .replace(/'/g, '&#039;');
     }
 
-    // Inicialização ao abrir a página
     window.addEventListener('DOMContentLoaded', async () => {
       const { data: { session } } = await db.auth.getSession();
       if (session && session.user) {
@@ -426,6 +468,7 @@ Atenciosamente,
       document.getElementById('conteudoPainel').classList.remove('hidden');
 
       await Promise.all([
+        carregarNucleosEAreas(),
         carregarCursos(),
         carregarDadosFila(),
         carregarMensagemWaDoBanco()
@@ -466,6 +509,169 @@ Atenciosamente,
       document.getElementById('alertaLogin').classList.add('hidden');
     }
 
+    // ================= GESTÃO DE NÚCLEOS E ÁREAS =================
+    async function carregarNucleosEAreas() {
+      const [resNucleos, resAreas] = await Promise.all([
+        db.from('nucleos_culturais').select('*').order('nome_nucleo', { ascending: true }),
+        db.from('areas_culturais').select('*').order('nome_area', { ascending: true })
+      ]);
+
+      if (!resNucleos.error) listaNucleosCompleta = resNucleos.data || [];
+      if (!resAreas.error) listaAreasCompleta = resAreas.data || [];
+
+      popularSelectNucleosForm();
+      popularFiltroNucleos();
+      popularSelectNucleoAreaModal();
+    }
+
+    function popularSelectNucleosForm() {
+      const select = document.getElementById('cursoNucleo');
+      const valorAtual = select.value;
+      select.innerHTML = '<option value="">Selecione o Núcleo...</option>' +
+        listaNucleosCompleta.map(n => `<option value="${escaparHTML(n.nome_nucleo)}">${escaparHTML(n.nome_nucleo)}</option>`).join('');
+      select.value = valorAtual;
+    }
+
+    function popularFiltroNucleos() {
+      const selectNucleo = document.getElementById('filtroNucleo');
+      const valorAtual = selectNucleo.value;
+      selectNucleo.innerHTML = '<option value="">Todos os Núcleos</option>' +
+        listaNucleosCompleta.map(n => `<option value="${escaparHTML(n.nome_nucleo)}">${escaparHTML(n.nome_nucleo)}</option>`).join('');
+      selectNucleo.value = valorAtual;
+    }
+
+    function popularSelectNucleoAreaModal() {
+      const select = document.getElementById('selectNucleoAreaModal');
+      if (!select) return;
+      const valorAtual = select.value;
+      select.innerHTML = '<option value="">Selecione o Núcleo...</option>' +
+        listaNucleosCompleta.map(n => `<option value="${n.id}">${escaparHTML(n.nome_nucleo)}</option>`).join('');
+      select.value = valorAtual;
+    }
+
+    // Atualiza o combobox de Áreas no formulário de Cursos com base no Núcleo escolhido
+    function atualizarSelectAreasForm(areaSelecionada = '') {
+      const nomeNucleoSel = document.getElementById('cursoNucleo').value;
+      const selectArea = document.getElementById('cursoArea');
+
+      const nucleoObj = listaNucleosCompleta.find(n => n.nome_nucleo === nomeNucleoSel);
+      if (!nucleoObj) {
+        selectArea.innerHTML = '<option value="">Selecione o Núcleo primeiro...</option>';
+        return;
+      }
+
+      const areasDoNucleo = listaAreasCompleta.filter(a => a.id_nucleo === nucleoObj.id);
+      selectArea.innerHTML = '<option value="">Sem Área específica (Geral)</option>' +
+        areasDoNucleo.map(a => `<option value="${escaparHTML(a.nome_area)}">${escaparHTML(a.nome_area)}</option>`).join('');
+      selectArea.value = areaSelecionada;
+    }
+
+    function abrirModalNucleosAreas() {
+      popularSelectNucleoAreaModal();
+      renderizarListaNucleosModal();
+      renderizarListaAreasModal();
+      document.getElementById('modalNucleosAreas').classList.remove('hidden');
+    }
+
+    function fecharModalNucleosAreas() {
+      document.getElementById('modalNucleosAreas').classList.add('hidden');
+    }
+
+    function renderizarListaNucleosModal() {
+      const ul = document.getElementById('listaNucleosModalCorpo');
+      if (!ul) return;
+      ul.innerHTML = listaNucleosCompleta.map(n => `
+        <li class="py-2 px-1 flex items-center justify-between">
+          <span class="font-medium text-slate-700">${escaparHTML(n.nome_nucleo)}</span>
+          <button onclick="excluirNucleo(${n.id}, '${escaparHTML(n.nome_nucleo)}')" class="text-rose-600 hover:underline font-semibold text-[11px]">Excluir</button>
+        </li>
+      `).join('');
+    }
+
+    function renderizarListaAreasModal() {
+      const idNucleoSel = document.getElementById('selectNucleoAreaModal').value;
+      const ul = document.getElementById('listaAreasModalCorpo');
+      if (!ul) return;
+
+      if (!idNucleoSel) {
+        ul.innerHTML = '<li class="p-2 text-slate-400 text-center">Selecione um núcleo acima.</li>';
+        return;
+      }
+
+      const areasFiltradas = listaAreasCompleta.filter(a => a.id_nucleo == idNucleoSel);
+      if (!areasFiltradas.length) {
+        ul.innerHTML = '<li class="p-2 text-slate-400 text-center">Nenhuma área cadastrada neste núcleo.</li>';
+        return;
+      }
+
+      ul.innerHTML = areasFiltradas.map(a => `
+        <li class="py-2 px-1 flex items-center justify-between">
+          <span class="font-medium text-slate-700">${escaparHTML(a.nome_area)}</span>
+          <button onclick="excluirArea(${a.id}, '${escaparHTML(a.nome_area)}')" class="text-rose-600 hover:underline font-semibold text-[11px]">Excluir</button>
+        </li>
+      `).join('');
+    }
+
+    async function adicionarNucleo(event) {
+      event.preventDefault();
+      const nome = document.getElementById('novoNucleoNome').value.trim();
+      if (!nome) return;
+
+      const { error } = await db.from('nucleos_culturais').insert([{ nome_nucleo: nome }]);
+      if (error) {
+        alert('Erro ao adicionar núcleo: ' + error.message);
+        return;
+      }
+      document.getElementById('novoNucleoNome').value = '';
+      await carregarNucleosEAreas();
+      renderizarListaNucleosModal();
+    }
+
+    async function excluirNucleo(idNucleo, nomeNucleo) {
+      const cursosVinc = listaCursosCompleta.filter(c => c.nucleo === nomeNucleo);
+      if (cursosVinc.length > 0) {
+        alert(`Não é possível excluir o núcleo "${nomeNucleo}" pois existem ${cursosVinc.length} curso(s) vinculados a ele.`);
+        return;
+      }
+      if (!confirm(`Deseja excluir o núcleo "${nomeNucleo}" e todas as suas áreas?`)) return;
+
+      const { error } = await db.from('nucleos_culturais').delete().eq('id', idNucleo);
+      if (error) {
+        alert('Erro ao excluir: ' + error.message);
+        return;
+      }
+      await carregarNucleosEAreas();
+      renderizarListaNucleosModal();
+      renderizarListaAreasModal();
+    }
+
+    async function adicionarArea(event) {
+      event.preventDefault();
+      const idNucleo = document.getElementById('selectNucleoAreaModal').value;
+      const nomeArea = document.getElementById('novaAreaNome').value.trim();
+      if (!idNucleo || !nomeArea) return;
+
+      const { error } = await db.from('areas_culturais').insert([{ id_nucleo: parseInt(idNucleo, 10), nome_area: nomeArea }]);
+      if (error) {
+        alert('Erro ao adicionar área: ' + error.message);
+        return;
+      }
+      document.getElementById('novaAreaNome').value = '';
+      await carregarNucleosEAreas();
+      renderizarListaAreasModal();
+    }
+
+    async function excluirArea(idArea, nomeArea) {
+      if (!confirm(`Deseja excluir a área "${nomeArea}"?`)) return;
+      const { error } = await db.from('areas_culturais').delete().eq('id', idArea);
+      if (error) {
+        alert('Erro ao excluir área: ' + error.message);
+        return;
+      }
+      await carregarNucleosEAreas();
+      renderizarListaAreasModal();
+    }
+
     // ================= CARREGAMENTO DE CURSOS E FILA =================
     async function carregarCursos() {
       const { data, error } = await db
@@ -475,19 +681,8 @@ Atenciosamente,
 
       if (!error && data) {
         listaCursosCompleta = data;
-        popularFiltroNucleos();
         atualizarSelectCursosFiltro();
       }
-    }
-
-    function popularFiltroNucleos() {
-      const selectNucleo = document.getElementById('filtroNucleo');
-      const valorAtual = selectNucleo.value;
-      const nucleos = [...new Set(listaCursosCompleta.map(c => c.nucleo).filter(Boolean))].sort();
-
-      selectNucleo.innerHTML = '<option value="">Todos os Núcleos</option>' +
-        nucleos.map(n => `<option value="${escaparHTML(n)}">${escaparHTML(n)}</option>`).join('');
-      selectNucleo.value = valorAtual;
     }
 
     function atualizarSelectCursosFiltro() {
@@ -528,9 +723,9 @@ Atenciosamente,
       });
 
       document.getElementById('cardAguardando').textContent = contagens.Aguardando;
-      document.getElementById('cardConvocados').textContent = contagens.Convocado;
-      document.getElementById('cardMatriculados').textContent = contagens.Matriculado;
-      document.getElementById('cardDesistentes').textContent = contagens.Desistente;
+      document.getElementById('cardConvocados').textContent = contagens.Convocados;
+      document.getElementById('cardMatriculados').textContent = contagens.Matriculados;
+      document.getElementById('cardDesistentes').textContent = contagens.Desistentes;
     }
 
     function filtrarTabela() {
@@ -540,11 +735,9 @@ Atenciosamente,
       const periodo = document.getElementById('filtroPeriodo').value;
       const status = document.getElementById('filtroStatus').value;
 
-      // Mapa de curso -> núcleo
       const mapaCursoNucleo = {};
       listaCursosCompleta.forEach(c => { mapaCursoNucleo[c.nome_curso] = c.nucleo; });
 
-      // Calcula a posição na fila ativa (apenas para candidatos "Aguardando" dentro do mesmo curso e período)
       const contadorPosicao = {};
       const posicoesPorId = {};
       listaFilaCompleta.forEach(item => {
@@ -671,7 +864,7 @@ Atenciosamente,
       await carregarDadosFila();
     }
 
-    // ================= WHATSAPP DINÂMICO COM SUPABASE =================
+    // ================= WHATSAPP DINÂMICO =================
     async function carregarMensagemWaDoBanco() {
       const { data, error } = await db
         .from('config_sistema')
@@ -688,7 +881,6 @@ Atenciosamente,
       const candidato = listaFilaCompleta.find(c => c.id === idCandidato);
       if (!candidato) return;
 
-      // Busca sempre a versão mais recente do banco no momento do clique
       await carregarMensagemWaDoBanco();
 
       const mensagemFinal = mensagemWaCache
@@ -738,7 +930,7 @@ Atenciosamente,
       fecharModalMensagemWa();
     }
 
-    // ================= MODAL DE CURSOS E LIMITES =================
+    // ================= MODAL DE CURSOS =================
     function abrirModalCursos() {
       renderizarListaCursosModal();
       document.getElementById('modalCursos').classList.remove('hidden');
@@ -758,28 +950,29 @@ Atenciosamente,
 
       corpo.innerHTML = listaCursosCompleta.map(c => {
         const turnos = [
-          c.manha ? 'M' : null,
-          c.tarde ? 'T' : null,
-          c.noite ? 'N' : null
+          c.manha ? 'Manhã' : null,
+          c.tarde ? 'Tarde' : null,
+          c.noite ? 'Noite' : null
         ].filter(Boolean).join(' / ') || 'Nenhum';
 
         const faixaEtaria = `${c.idade_minima ?? 0} a ${c.idade_maxima ?? 'Livre'}`;
         const limite = c.limite_fila ? `${c.limite_fila} vagas` : 'Ilimitado';
 
         return `
-          <tr class="hover:bg-slate-50">
-            <td class="p-2.5 font-semibold text-slate-800">${escaparHTML(c.nome_curso)}</td>
-            <td class="p-2.5 text-slate-600">${escaparHTML(c.nucleo || '')} ${c.area ? `(${escaparHTML(c.area)})` : ''}</td>
-            <td class="p-2.5">${turnos}</td>
-            <td class="p-2.5">${faixaEtaria}</td>
-            <td class="p-2.5 font-semibold text-indigo-700">${limite}</td>
-            <td class="p-2.5">
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${c.ativo ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+          <tr class="hover:bg-slate-50 transition">
+            <td class="p-3 font-semibold text-slate-800">${escaparHTML(c.nome_curso)}</td>
+            <td class="p-3 text-slate-600">${escaparHTML(c.nucleo || '')} ${c.area ? `(${escaparHTML(c.area)})` : ''}</td>
+            <td class="p-3 font-medium text-slate-700">${turnos}</td>
+            <td class="p-3">${faixaEtaria}</td>
+            <td class="p-3 font-semibold text-indigo-700">${limite}</td>
+            <td class="p-3">
+              <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${c.ativo ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
                 ${c.ativo ? 'Ativo' : 'Inativo'}
               </span>
             </td>
-            <td class="p-2.5 text-right space-x-1">
+            <td class="p-3 text-right space-x-2 whitespace-nowrap">
               <button onclick="preencherEdicaoCurso(${c.id_curso})" class="text-indigo-600 hover:underline font-semibold">Editar</button>
+              <button onclick="excluirCurso(${c.id_curso}, '${escaparHTML(c.nome_curso)}')" class="text-rose-600 hover:underline font-semibold" title="Excluir curso">🗑️ Excluir</button>
             </td>
           </tr>
         `;
@@ -793,19 +986,28 @@ Atenciosamente,
       document.getElementById('cursoIdEdicao').value = c.id_curso;
       document.getElementById('cursoNome').value = c.nome_curso || '';
       document.getElementById('cursoNucleo').value = c.nucleo || '';
-      document.getElementById('cursoArea').value = c.area || '';
-      document.getElementById('cursoIdadeMin').value = c.idade_minima ?? '';
-      document.getElementById('cursoIdadeMax').value = c.idade_maxima ?? '';
-      document.getElementById('cursoLimiteFila').value = c.limite_fila ?? '';
+      
+      atualizarSelectAreasForm(c.area || '');
+
+      document.getElementById('cursoIdMin').value = c.idade_minima ?? '';
+      document.getElementById('cursoIdMax').value = c.idade_maxima ?? '';
+      document.getElementById('cursoLimite').value = c.limite_fila ?? '';
       document.getElementById('cursoManha').checked = !!c.manha;
       document.getElementById('cursoTarde').checked = !!c.tarde;
       document.getElementById('cursoNoite').checked = !!c.noite;
       document.getElementById('cursoAtivo').checked = !!c.ativo;
+
+      document.getElementById('formCurso').scrollIntoView({ behavior: 'smooth' });
     }
 
     function limparFormCurso() {
       document.getElementById('formCurso').reset();
       document.getElementById('cursoIdEdicao').value = '';
+      document.getElementById('cursoManha').checked = true;
+      document.getElementById('cursoTarde').checked = true;
+      document.getElementById('cursoNoite').checked = true;
+      document.getElementById('cursoAtivo').checked = true;
+      document.getElementById('cursoArea').innerHTML = '<option value="">Selecione o Núcleo primeiro...</option>';
     }
 
     async function salvarCurso(event) {
@@ -814,11 +1016,11 @@ Atenciosamente,
 
       const dadosCurso = {
         nome_curso: document.getElementById('cursoNome').value.trim(),
-        nucleo: document.getElementById('cursoNucleo').value.trim(),
-        area: document.getElementById('cursoArea').value.trim() || null,
-        idade_minima: document.getElementById('cursoIdadeMin').value ? parseInt(document.getElementById('cursoIdadeMin').value, 10) : 0,
-        idade_maxima: document.getElementById('cursoIdadeMax').value ? parseInt(document.getElementById('cursoIdadeMax').value, 10) : null,
-        limite_fila: document.getElementById('cursoLimiteFila').value ? parseInt(document.getElementById('cursoLimiteFila').value, 10) : null,
+        nucleo: document.getElementById('cursoNucleo').value,
+        area: document.getElementById('cursoArea').value || null,
+        idade_minima: document.getElementById('cursoIdMin').value ? parseInt(document.getElementById('cursoIdMin').value, 10) : 0,
+        idade_maxima: document.getElementById('cursoIdMax').value ? parseInt(document.getElementById('cursoIdMax').value, 10) : null,
+        limite_fila: document.getElementById('cursoLimite').value ? parseInt(document.getElementById('cursoLimite').value, 10) : 0,
         manha: document.getElementById('cursoManha').checked,
         tarde: document.getElementById('cursoTarde').checked,
         noite: document.getElementById('cursoNoite').checked,
@@ -844,6 +1046,34 @@ Atenciosamente,
       renderizarListaCursosModal();
     }
 
+    async function excluirCurso(idCurso, nomeCurso) {
+      const { data: inscritos, error: erroConsulta } = await db
+        .from('fila_cemart')
+        .select('id')
+        .eq('curso', nomeCurso);
+
+      if (erroConsulta) {
+        alert('Erro ao verificar dependências: ' + erroConsulta.message);
+        return;
+      }
+
+      if (inscritos && inscritos.length > 0) {
+        alert(`Não é possível excluir o curso "${nomeCurso}" pois existem ${inscritos.length} candidato(s) vinculados a ele na fila. Utilize a opção "Inativar".`);
+        return;
+      }
+
+      if (!confirm(`Tem certeza que deseja excluir permanentemente o curso "${nomeCurso}"?`)) return;
+
+      const { error: erroExclusao } = await db.from('cursos').delete().eq('id_curso', idCurso);
+      if (erroExclusao) {
+        alert('Erro ao excluir curso: ' + erroExclusao.message);
+        return;
+      }
+
+      await carregarCursos();
+      renderizarListaCursosModal();
+    }
+
     // ================= MODAL DE ACESSOS =================
     async function abrirModalAcessos() {
       document.getElementById('modalAcessos').classList.remove('hidden');
@@ -861,12 +1091,10 @@ Atenciosamente,
         ul.innerHTML = '<li class="py-2 text-slate-400">Erro ao carregar lista.</li>';
         return;
       }
-
       ul.innerHTML = data.map(item => `
         <li class="py-2.5 flex items-center justify-between">
           <span class="font-medium text-slate-700">${escaparHTML(item.email)}</span>
-          <button onclick="removerEmailPermitido(${item.id}, '${escaparHTML(item.email)}')"
-            class="text-xs text-rose-600 hover:underline font-semibold">Remover</button>
+          <button onclick="removerEmailPermitido(${item.id}, '${escaparHTML(item.email)}')" class="text-xs text-rose-600 hover:underline font-semibold">Remover</button>
         </li>
       `).join('');
     }
@@ -891,7 +1119,7 @@ Atenciosamente,
         alert('Você não pode remover o seu próprio e-mail enquanto estiver logado.');
         return;
       }
-      if (!confirm(`Deseja remover a autorização de acesso para ${email}?`)) return;
+      if (!confirm(`Deseja remover o acesso para ${email}?`)) return;
 
       const { error } = await db.from('usuarios_permitidos').delete().eq('id', id);
       if (error) {
@@ -901,7 +1129,7 @@ Atenciosamente,
       await carregarEmailsPermitidos();
     }
 
-    // ================= MODAL DE TROCA DE SENHA =================
+    // ================= MODAL DE TROCAR SENHA =================
     function abrirModalTrocaSenha() {
       document.getElementById('modalTrocaSenha').classList.remove('hidden');
     }
@@ -921,7 +1149,6 @@ Atenciosamente,
         return;
       }
 
-      // Valida a senha atual antes de permitir a troca
       const { error: erroAuth } = await db.auth.signInWithPassword({
         email: usuarioLogado.email,
         password: senhaAtual

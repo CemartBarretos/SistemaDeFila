@@ -9,6 +9,19 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
+  <style>
+    /* Estilos exclusivos para impressão e geração de PDF */
+    @media print {
+      body { background: white !important; color: black !important; font-size: 11pt; }
+      header, .no-print, button, select, input, .badge-status { display: none !important; }
+      .print-only { display: block !important; }
+      main { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+      table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; }
+      th, td { border: 1px solid #cbd5e1 !important; padding: 6px 8px !important; text-align: left; font-size: 10pt; }
+      th { background-color: #f1f5f9 !important; color: #0f172a !important; }
+    }
+    .print-only { display: none; }
+  </style>
 </head>
 <body class="bg-slate-100 min-h-screen font-sans text-slate-800">
 
@@ -81,6 +94,9 @@
           <button onclick="exportarCSV()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-lg text-xs font-semibold transition">
             📥 CSV
           </button>
+          <button onclick="imprimirRelatorioPDF()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition shadow-sm">
+            🖨️ Imprimir / PDF
+          </button>
           <button onclick="realizarLogout()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-2 rounded-lg text-xs font-semibold transition border border-rose-200">
             Sair
           </button>
@@ -89,8 +105,15 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
-      <!-- Indicadores Rápidos -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <!-- Cabeçalho Exclusivo para Impressão -->
+      <div class="print-only text-center mb-6">
+        <h2 class="text-xl font-bold uppercase">CEMART – Centro Municipal de Artes de Barretos</h2>
+        <h3 class="text-sm font-semibold text-slate-600">Relatório Oficial de Candidatos na Fila de Espera</h3>
+        <p id="infoFiltroImpressao" class="text-xs text-slate-500 mt-1"></p>
+      </div>
+
+      <!-- Indicadores Rápidos (Ocultos na Impressão) -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 no-print">
         <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
           <span class="text-xs font-semibold uppercase text-slate-400">Aguardando na Fila</span>
           <p id="cardAguardando" class="text-2xl font-bold text-amber-600 mt-1">0</p>
@@ -109,8 +132,8 @@
         </div>
       </div>
 
-      <!-- Barra de Filtros -->
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+      <!-- Barra de Filtros (Oculta na Impressão) -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 no-print">
         <div>
           <label class="block text-xs font-semibold text-slate-500 mb-1">Buscar Candidato / Protocolo</label>
           <input type="text" id="buscaTexto" oninput="filtrarTabela()" placeholder="Nome, protocolo ou telefone..."
@@ -155,7 +178,7 @@
 
       <!-- Tabela da Fila -->
       <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50 no-print">
           <h2 class="font-bold text-sm text-slate-700">Lista de Candidatos (Ordem Cronológica)</h2>
           <button onclick="carregarDadosFila()" class="text-xs text-indigo-600 hover:underline font-semibold">
             ↻ Atualizar Lista
@@ -170,7 +193,7 @@
                 <th class="py-3 px-4">Curso / Turno</th>
                 <th class="py-3 px-4">Inscrição / Protocolo</th>
                 <th class="py-3 px-4">Status</th>
-                <th class="py-3 px-4 text-right">Ações da Secretaria</th>
+                <th class="py-3 px-4 text-right no-print">Ações da Secretaria</th>
               </tr>
             </thead>
             <tbody id="tabelaCorpo" class="divide-y divide-slate-200 text-sm">
@@ -284,9 +307,7 @@
         <button onclick="fecharModalNucleosAreas()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
       </div>
 
-      <!-- Abas Internas / Divisor -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-y-auto">
-        <!-- Coluna de Núcleos -->
         <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col space-y-3">
           <h4 class="font-bold text-xs uppercase text-slate-600">Núcleos Culturais</h4>
           <form onsubmit="adicionarNucleo(event)" class="flex gap-2">
@@ -299,7 +320,6 @@
           </div>
         </div>
 
-        <!-- Coluna de Áreas -->
         <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col space-y-3">
           <h4 class="font-bold text-xs uppercase text-slate-600">Áreas por Núcleo</h4>
           <form onsubmit="adicionarArea(event)" class="space-y-2">
@@ -308,7 +328,7 @@
               <option value="">Selecione o Núcleo...</option>
             </select>
             <div class="flex gap-2">
-              <input type="text" id="novaAreaNome" required placeholder="Nome da área (ex: Cordas)..."
+              <input type="text" id="novaAreaNome" required placeholder="Nome da área..."
                 class="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-violet-500 focus:outline-none bg-white" />
               <button type="submit" class="bg-violet-600 hover:bg-violet-700 text-white px-3 py-2 rounded-xl text-xs font-semibold shadow">Adicionar</button>
             </div>
@@ -549,7 +569,6 @@ Atenciosamente,
       select.value = valorAtual;
     }
 
-    // Atualiza o combobox de Áreas no formulário de Cursos com base no Núcleo escolhido
     function atualizarSelectAreasForm(areaSelecionada = '') {
       const nomeNucleoSel = document.getElementById('cursoNucleo').value;
       const selectArea = document.getElementById('cursoArea');
@@ -742,7 +761,7 @@ Atenciosamente,
       const posicoesPorId = {};
       listaFilaCompleta.forEach(item => {
         if ((item.status || 'Aguardando') === 'Aguardando') {
-          const chaveFila = `${item.curso}||${item.periodo}`;
+          const chaveFila = `${item.curso}\vert{}\vert{}${item.periodo}`;
           contadorPosicao[chaveFila] = (contadorPosicao[chaveFila] || 0) + 1;
           posicoesPorId[item.id] = contadorPosicao[chaveFila];
         }
@@ -761,6 +780,13 @@ Atenciosamente,
 
         return passaTexto && passaNucleo && passaCurso && passaPeriodo && passaStatus;
       });
+
+      // Atualiza texto explicativo na impressão com os filtros ativos
+      const txtNucleo = nucleo ? `Núcleo: ${nucleo}` : 'Todos os Núcleos';
+      const txtCurso = curso ? ` | Curso: ${curso}` : '';
+      const txtPeriodo = periodo ? ` | Período: ${periodo}` : '';
+      const txtStatus = status ? ` | Status: ${status}` : '';
+      document.getElementById('infoFiltroImpressao').textContent = `${txtNucleo}${txtCurso}${txtPeriodo}${txtStatus} — Gerado em:${new Date().toLocaleString('pt-BR')}`;
 
       renderizarTabela(filtrados, posicoesPorId);
     }
@@ -801,12 +827,12 @@ Atenciosamente,
                 ${item.nome_responsavel ? ` | Resp: ${escaparHTML(item.nome_responsavel)}` : ''}
               </div>
               <div class="text-xs text-slate-600 font-medium mt-0.5">
-                📱 ${escaparHTML(item.fone1 || '')} ${item.fone2 ? ` / ${escaparHTML(item.fone2)}` : ''}
+                📱 ${escaparHTML(item.fone1 \vert{}\vert{} '')}${item.fone2 ? ` / ${escaparHTML(item.fone2)}` : ''}
               </div>
             </td>
             <td class="py-3 px-4">
               <div class="font-semibold text-slate-800">${escaparHTML(item.curso)}</div>
-              <div class="text-xs text-slate-500">${escaparHTML(item.periodo || '')} ${item.nivel ? `• ${escaparHTML(item.nivel)}` : ''}</div>
+              <div class="text-xs text-slate-500">${escaparHTML(item.periodo \vert{}\vert{} '')}${item.nivel ? `• ${escaparHTML(item.nivel)}` : ''}</div>
             </td>
             <td class="py-3 px-4">
               <div class="text-xs text-slate-700">${escaparHTML(dataInscricao)}</div>
@@ -816,15 +842,18 @@ Atenciosamente,
               ${badgeAuditoria}
             </td>
             <td class="py-3 px-4">
+              <span class="inline-block px-2.5 py-1 rounded-md text-xs font-semibold badge-status ${coresStatus[statusAtual] || ''}">
+                ${statusAtual}
+              </span>
               <select onchange="atualizarStatus(${item.id}, this.value)"
-                class="px-2.5 py-1.5 rounded-lg border text-xs font-semibold ${coresStatus[statusAtual] || 'bg-white'}">
+                class="no-print mt-1 px-2 py-1 rounded border text-xs font-semibold bg-white">
                 <option value="Aguardando" ${statusAtual === 'Aguardando' ? 'selected' : ''}>Aguardando</option>
                 <option value="Convocado" ${statusAtual === 'Convocado' ? 'selected' : ''}>Convocado</option>
                 <option value="Matriculado" ${statusAtual === 'Matriculado' ? 'selected' : ''}>Matriculado</option>
                 <option value="Desistente" ${statusAtual === 'Desistente' ? 'selected' : ''}>Desistente</option>
               </select>
             </td>
-            <td class="py-3 px-4 text-right space-x-1 whitespace-nowrap">
+            <td class="py-3 px-4 text-right space-x-1 whitespace-nowrap no-print">
               <button onclick="convocarWhatsApp(${item.id})"
                 class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow-sm">
                 WhatsApp
@@ -838,6 +867,10 @@ Atenciosamente,
           </tr>
         `;
       }).join('');
+    }
+
+    function imprimirRelatorioPDF() {
+      window.print();
     }
 
     async function atualizarStatus(idCandidato, novoStatus) {
@@ -895,317 +928,4 @@ Atenciosamente,
         return;
       }
 
-      const urlWa = `https://wa.me/55${foneLimpo}?text=${encodeURIComponent(mensagemFinal)}`;
-      window.open(urlWa, '_blank');
-    }
-
-    async function abrirModalMensagemWa() {
-      await carregarMensagemWaDoBanco();
-      document.getElementById('campoTextoWa').value = mensagemWaCache;
-      document.getElementById('modalMensagemWa').classList.remove('hidden');
-    }
-
-    function fecharModalMensagemWa() {
-      document.getElementById('modalMensagemWa').classList.add('hidden');
-    }
-
-    async function salvarMensagemWa() {
-      const novoTexto = document.getElementById('campoTextoWa').value.trim();
-      if (!novoTexto) {
-        alert('A mensagem não pode ficar em branco.');
-        return;
-      }
-
-      const { error } = await db
-        .from('config_sistema')
-        .upsert({ chave: 'mensagem_whatsapp', valor: novoTexto }, { onConflict: 'chave' });
-
-      if (error) {
-        alert('Erro ao salvar a mensagem no Supabase: ' + error.message);
-        return;
-      }
-
-      mensagemWaCache = novoTexto;
-      alert('Modelo de mensagem do WhatsApp atualizado com sucesso!');
-      fecharModalMensagemWa();
-    }
-
-    // ================= MODAL DE CURSOS =================
-    function abrirModalCursos() {
-      renderizarListaCursosModal();
-      document.getElementById('modalCursos').classList.remove('hidden');
-    }
-
-    function fecharModalCursos() {
-      document.getElementById('modalCursos').classList.add('hidden');
-      limparFormCurso();
-    }
-
-    function renderizarListaCursosModal() {
-      const corpo = document.getElementById('listaCursosCorpo');
-      if (!listaCursosCompleta.length) {
-        corpo.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">Nenhum curso cadastrado.</td></tr>';
-        return;
-      }
-
-      corpo.innerHTML = listaCursosCompleta.map(c => {
-        const turnos = [
-          c.manha ? 'Manhã' : null,
-          c.tarde ? 'Tarde' : null,
-          c.noite ? 'Noite' : null
-        ].filter(Boolean).join(' / ') || 'Nenhum';
-
-        const faixaEtaria = `${c.idade_minima ?? 0} a ${c.idade_maxima ?? 'Livre'}`;
-        const limite = c.limite_fila ? `${c.limite_fila} vagas` : 'Ilimitado';
-
-        return `
-          <tr class="hover:bg-slate-50 transition">
-            <td class="p-3 font-semibold text-slate-800">${escaparHTML(c.nome_curso)}</td>
-            <td class="p-3 text-slate-600">${escaparHTML(c.nucleo || '')} ${c.area ? `(${escaparHTML(c.area)})` : ''}</td>
-            <td class="p-3 font-medium text-slate-700">${turnos}</td>
-            <td class="p-3">${faixaEtaria}</td>
-            <td class="p-3 font-semibold text-indigo-700">${limite}</td>
-            <td class="p-3">
-              <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${c.ativo ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
-                ${c.ativo ? 'Ativo' : 'Inativo'}
-              </span>
-            </td>
-            <td class="p-3 text-right space-x-2 whitespace-nowrap">
-              <button onclick="preencherEdicaoCurso(${c.id_curso})" class="text-indigo-600 hover:underline font-semibold">Editar</button>
-              <button onclick="excluirCurso(${c.id_curso}, '${escaparHTML(c.nome_curso)}')" class="text-rose-600 hover:underline font-semibold" title="Excluir curso">🗑️ Excluir</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
-
-    function preencherEdicaoCurso(idCurso) {
-      const c = listaCursosCompleta.find(item => item.id_curso === idCurso);
-      if (!c) return;
-
-      document.getElementById('cursoIdEdicao').value = c.id_curso;
-      document.getElementById('cursoNome').value = c.nome_curso || '';
-      document.getElementById('cursoNucleo').value = c.nucleo || '';
-      
-      atualizarSelectAreasForm(c.area || '');
-
-      document.getElementById('cursoIdMin').value = c.idade_minima ?? '';
-      document.getElementById('cursoIdMax').value = c.idade_maxima ?? '';
-      document.getElementById('cursoLimite').value = c.limite_fila ?? '';
-      document.getElementById('cursoManha').checked = !!c.manha;
-      document.getElementById('cursoTarde').checked = !!c.tarde;
-      document.getElementById('cursoNoite').checked = !!c.noite;
-      document.getElementById('cursoAtivo').checked = !!c.ativo;
-
-      document.getElementById('formCurso').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function limparFormCurso() {
-      document.getElementById('formCurso').reset();
-      document.getElementById('cursoIdEdicao').value = '';
-      document.getElementById('cursoManha').checked = true;
-      document.getElementById('cursoTarde').checked = true;
-      document.getElementById('cursoNoite').checked = true;
-      document.getElementById('cursoAtivo').checked = true;
-      document.getElementById('cursoArea').innerHTML = '<option value="">Selecione o Núcleo primeiro...</option>';
-    }
-
-    async function salvarCurso(event) {
-      event.preventDefault();
-      const idEdicao = document.getElementById('cursoIdEdicao').value;
-
-      const dadosCurso = {
-        nome_curso: document.getElementById('cursoNome').value.trim(),
-        nucleo: document.getElementById('cursoNucleo').value,
-        area: document.getElementById('cursoArea').value || null,
-        idade_minima: document.getElementById('cursoIdMin').value ? parseInt(document.getElementById('cursoIdMin').value, 10) : 0,
-        idade_maxima: document.getElementById('cursoIdMax').value ? parseInt(document.getElementById('cursoIdMax').value, 10) : null,
-        limite_fila: document.getElementById('cursoLimite').value ? parseInt(document.getElementById('cursoLimite').value, 10) : 0,
-        manha: document.getElementById('cursoManha').checked,
-        tarde: document.getElementById('cursoTarde').checked,
-        noite: document.getElementById('cursoNoite').checked,
-        ativo: document.getElementById('cursoAtivo').checked
-      };
-
-      let erroOperacao = null;
-      if (idEdicao) {
-        const { error } = await db.from('cursos').update(dadosCurso).eq('id_curso', idEdicao);
-        erroOperacao = error;
-      } else {
-        const { error } = await db.from('cursos').insert([dadosCurso]);
-        erroOperacao = error;
-      }
-
-      if (erroOperacao) {
-        alert('Erro ao salvar curso: ' + erroOperacao.message);
-        return;
-      }
-
-      limparFormCurso();
-      await carregarCursos();
-      renderizarListaCursosModal();
-    }
-
-    async function excluirCurso(idCurso, nomeCurso) {
-      const { data: inscritos, error: erroConsulta } = await db
-        .from('fila_cemart')
-        .select('id')
-        .eq('curso', nomeCurso);
-
-      if (erroConsulta) {
-        alert('Erro ao verificar dependências: ' + erroConsulta.message);
-        return;
-      }
-
-      if (inscritos && inscritos.length > 0) {
-        alert(`Não é possível excluir o curso "${nomeCurso}" pois existem ${inscritos.length} candidato(s) vinculados a ele na fila. Utilize a opção "Inativar".`);
-        return;
-      }
-
-      if (!confirm(`Tem certeza que deseja excluir permanentemente o curso "${nomeCurso}"?`)) return;
-
-      const { error: erroExclusao } = await db.from('cursos').delete().eq('id_curso', idCurso);
-      if (erroExclusao) {
-        alert('Erro ao excluir curso: ' + erroExclusao.message);
-        return;
-      }
-
-      await carregarCursos();
-      renderizarListaCursosModal();
-    }
-
-    // ================= MODAL DE ACESSOS =================
-    async function abrirModalAcessos() {
-      document.getElementById('modalAcessos').classList.remove('hidden');
-      await carregarEmailsPermitidos();
-    }
-
-    function fecharModalAcessos() {
-      document.getElementById('modalAcessos').classList.add('hidden');
-    }
-
-    async function carregarEmailsPermitidos() {
-      const { data, error } = await db.from('usuarios_permitidos').select('*').order('criado_em', { ascending: true });
-      const ul = document.getElementById('listaEmailsPermitidos');
-      if (error || !data) {
-        ul.innerHTML = '<li class="py-2 text-slate-400">Erro ao carregar lista.</li>';
-        return;
-      }
-      ul.innerHTML = data.map(item => `
-        <li class="py-2.5 flex items-center justify-between">
-          <span class="font-medium text-slate-700">${escaparHTML(item.email)}</span>
-          <button onclick="removerEmailPermitido(${item.id}, '${escaparHTML(item.email)}')" class="text-xs text-rose-600 hover:underline font-semibold">Remover</button>
-        </li>
-      `).join('');
-    }
-
-    async function adicionarEmailPermitido(event) {
-      event.preventDefault();
-      const input = document.getElementById('novoEmailPermitido');
-      const email = input.value.trim().toLowerCase();
-      if (!email) return;
-
-      const { error } = await db.from('usuarios_permitidos').insert([{ email }]);
-      if (error) {
-        alert('Erro ao autorizar e-mail: ' + error.message);
-        return;
-      }
-      input.value = '';
-      await carregarEmailsPermitidos();
-    }
-
-    async function removerEmailPermitido(id, email) {
-      if (usuarioLogado && usuarioLogado.email.toLowerCase() === email.toLowerCase()) {
-        alert('Você não pode remover o seu próprio e-mail enquanto estiver logado.');
-        return;
-      }
-      if (!confirm(`Deseja remover o acesso para ${email}?`)) return;
-
-      const { error } = await db.from('usuarios_permitidos').delete().eq('id', id);
-      if (error) {
-        alert('Erro ao remover: ' + error.message);
-        return;
-      }
-      await carregarEmailsPermitidos();
-    }
-
-    // ================= MODAL DE TROCAR SENHA =================
-    function abrirModalTrocaSenha() {
-      document.getElementById('modalTrocaSenha').classList.remove('hidden');
-    }
-
-    function fecharModalTrocaSenha() {
-      document.getElementById('modalTrocaSenha').classList.add('hidden');
-    }
-
-    async function processarTrocaSenha(event) {
-      event.preventDefault();
-      const senhaAtual = document.getElementById('senhaAtual').value;
-      const novaSenha = document.getElementById('novaSenha').value;
-      const confirmar = document.getElementById('confirmarNovaSenha').value;
-
-      if (novaSenha !== confirmar) {
-        alert('A nova senha e a confirmação não coincidem.');
-        return;
-      }
-
-      const { error: erroAuth } = await db.auth.signInWithPassword({
-        email: usuarioLogado.email,
-        password: senhaAtual
-      });
-
-      if (erroAuth) {
-        alert('A senha atual informada está incorreta.');
-        return;
-      }
-
-      const { error } = await db.auth.updateUser({ password: novaSenha });
-      if (error) {
-        alert('Erro ao atualizar a senha: ' + error.message);
-        return;
-      }
-
-      alert('Senha atualizada com sucesso!');
-      document.getElementById('senhaAtual').value = '';
-      document.getElementById('novaSenha').value = '';
-      document.getElementById('confirmarNovaSenha').value = '';
-      fecharModalTrocaSenha();
-    }
-
-    // ================= EXPORTAR CSV =================
-    function exportarCSV() {
-      if (!listaFilaCompleta.length) {
-        alert('Não há dados na fila para exportar.');
-        return;
-      }
-
-      const cabecalho = ['Protocolo', 'Nome do Aluno', 'Data Nasc', 'Responsavel', 'Telefone 1', 'Telefone 2', 'Curso', 'Periodo', 'Status', 'Data Inscricao', 'Atualizado Por'];
-      const linhas = listaFilaCompleta.map(item => [
-        item.protocolo || '',
-        item.nome_aluno || '',
-        item.data_nasc || '',
-        item.nome_responsavel || '',
-        item.fone1 || '',
-        item.fone2 || '',
-        item.curso || '',
-        item.periodo || '',
-        item.status || 'Aguardando',
-        item.criado_em ? new Date(item.criado_em).toLocaleString('pt-BR') : '',
-        item.atualizado_por || ''
-      ]);
-
-      const conteudoCSV = '\uFEFF' + [cabecalho, ...linhas]
-        .map(linha => linha.map(campo => `"${String(campo).replace(/"/g, '""')}"`).join(';'))
-        .join('\n');
-
-      const blob = new Blob([conteudoCSV], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `fila_cemart_${new Date().toISOString().slice(0, 10)}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-  </script>
-</body>
-</html>
+      const urlWa = `

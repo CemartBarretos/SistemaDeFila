@@ -1,574 +1,983 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel da Secretaria - CEMART</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel de Gestão - CEMART Barretos</title>
+  <link rel="icon" type="image/png" href="icone-cemart.png" />
+  <link rel="manifest" href="manifest.json" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
-
-  <script>
-    if (sessionStorage.getItem('autenticado_cemart') !== 'true') {
-      window.location.href = 'index.html';
-    }
-  </script>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="bg-slate-100 min-h-screen font-sans text-slate-800">
 
-  <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-20">
-    <div class="max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
-      <div class="flex items-center space-x-3">
-        <div class="bg-white p-1.5 rounded-xl shadow-sm flex items-center justify-center">
-          <img src="logo-cemart.png" alt="Logo CEMART" class="h-8 sm:h-10 w-auto object-contain">
+  <!-- ================= TELA DE LOGIN ================= -->
+  <div id="telaLogin" class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-8">
+      <div class="text-center mb-6">
+        <img src="logo-cemart.png" alt="Logo CEMART" class="h-20 mx-auto mb-3 object-contain" onerror="this.style.display='none'" />
+        <h1 class="text-2xl font-bold text-slate-800">Painel Administrativo</h1>
+        <p class="text-sm text-slate-500">CEMART – Centro Municipal de Artes</p>
+      </div>
+
+      <div id="alertaLogin" class="hidden mb-4 p-3 rounded-lg text-sm font-medium"></div>
+
+      <form id="formLogin" onsubmit="realizarLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">E-mail do Operador</label>
+          <input type="email" id="loginEmail" required placeholder="seu.email@barretos.sp.gov.br"
+            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-600 focus:outline-none text-sm" />
         </div>
         <div>
-          <h1 class="font-bold text-base sm:text-lg leading-tight">CEMART - Painel da Secretaria</h1>
-          <p class="text-xs text-indigo-200">Gestão de Vagas e Chamadas</p>
+          <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Senha</label>
+          <input type="password" id="loginSenha" required placeholder="••••••••"
+            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-600 focus:outline-none text-sm" />
+        </div>
+        <button type="submit" id="btnEntrar"
+          class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-lg transition shadow">
+          Entrar no Painel
+        </button>
+      </form>
+
+      <div class="mt-4 flex items-center justify-between text-xs text-slate-500">
+        <button type="button" onclick="esqueciMinhaSenha()" class="text-indigo-600 hover:underline font-medium">
+          Esqueci minha senha
+        </button>
+        <a href="index.html" class="hover:underline">← Voltar ao Início</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= CONTEÚDO PRINCIPAL DO PAINEL ================= -->
+  <div id="conteudoPainel" class="hidden">
+    <!-- Cabeçalho -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <img src="logo-cemart.png" alt="CEMART" class="h-12 w-auto object-contain" onerror="this.style.display='none'" />
+          <div>
+            <h1 class="text-lg font-bold text-slate-800 leading-tight">Gestão de Filas e Vagas – CEMART</h1>
+            <p class="text-xs text-slate-500">Operador logado: <span id="spanUsuarioLogado" class="font-semibold text-indigo-600"></span></p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="abrirModalCursos()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-2 rounded-lg text-xs font-semibold transition border border-indigo-200">
+            📚 Gerir Cursos e Limites
+          </button>
+          <button onclick="abrirModalMensagemWa()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-2 rounded-lg text-xs font-semibold transition border border-emerald-200">
+            💬 Mensagem WhatsApp
+          </button>
+          <button onclick="abrirModalAcessos()" class="bg-amber-50 hover:bg-amber-100 text-amber-800 px-3 py-2 rounded-lg text-xs font-semibold transition border border-amber-200">
+            🔑 Acessos
+          </button>
+          <button onclick="abrirModalTrocaSenha()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-semibold transition">
+            🔒 Alterar Senha
+          </button>
+          <button onclick="exportarCSV()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-lg text-xs font-semibold transition">
+            📥 Exportar CSV
+          </button>
+          <button onclick="realizarLogout()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-2 rounded-lg text-xs font-semibold transition border border-rose-200">
+            Sair
+          </button>
         </div>
       </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <button onclick="abrirModalAcessos()" class="px-3 py-1.5 bg-indigo-700 hover:bg-indigo-600 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
-          <i class="fa-solid fa-users text-xs text-amber-400"></i> Acessos
-        </button>
-        <button onclick="abrirModalCursos()" class="px-3 py-1.5 bg-indigo-700 hover:bg-indigo-600 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
-          <i class="fa-solid fa-graduation-cap text-xs text-amber-400"></i> Cursos
-        </button>
-        <button onclick="abrirModalQRCode()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-indigo-950 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
-          <i class="fa-solid fa-qrcode text-xs"></i> QR Code
-        </button>
-        <button onclick="exportarCSV()" class="px-3 py-1.5 bg-indigo-800 hover:bg-indigo-700 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
-          <i class="fa-solid fa-file-csv text-xs"></i> Exportar
-        </button>
-        <button onclick="abrirModalSenha()" class="px-3 py-1.5 bg-indigo-800 hover:bg-indigo-700 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
-          <i class="fa-solid fa-key text-[10px]"></i> Senha
-        </button>
-        <button onclick="fazerLogout()" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
-          <i class="fa-solid fa-right-from-bracket text-[10px]"></i> Sair
-        </button>
-      </div>
-    </div>
-  </header>
+    </header>
 
-  <main class="max-w-7xl mx-auto px-6 py-6 flex-1 w-full space-y-6">
-
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-        <span class="text-xs text-slate-500 font-medium">Total de Registros</span>
-        <p id="totalRegistros" class="text-2xl font-black text-slate-900 mt-1">0</p>
-      </div>
-      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-        <span class="text-xs text-amber-600 font-medium">Na Fila</span>
-        <p id="totalAguardando" class="text-2xl font-black text-amber-600 mt-1">0</p>
-      </div>
-      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-        <span class="text-xs text-blue-600 font-medium">Convocados</span>
-        <p id="totalConvocados" class="text-2xl font-black text-blue-600 mt-1">0</p>
-      </div>
-      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-        <span class="text-xs text-emerald-600 font-medium">Matriculados</span>
-        <p id="totalMatriculados" class="text-2xl font-black text-emerald-600 mt-1">0</p>
-      </div>
-    </div>
-
-    <!-- Barra de Filtros -->
-    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
-      <div class="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
-        <div class="relative flex-1 min-w-[180px]">
-          <input type="text" id="buscaTexto" oninput="filtrarTabela()" placeholder="Buscar aluno, protocolo..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
-          <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <!-- Indicadores Rápidos -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+          <span class="text-xs font-semibold uppercase text-slate-400">Aguardando na Fila</span>
+          <p id="cardAguardando" class="text-2xl font-bold text-amber-600 mt-1">0</p>
         </div>
-        <select id="filtroNucleo" onchange="atualizarFiltroCursos(); filtrarTabela()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 font-medium text-slate-700">
-          <option value="">Todos os Núcleos</option>
-          <option value="Dança">🩰 Dança</option>
-          <option value="Artes">🎭 Artes</option>
-          <option value="Música">🎵 Música</option>
-        </select>
-        <select id="filtroCurso" onchange="filtrarTabela()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600">
-          <option value="">Todos os Cursos</option>
-        </select>
-        <select id="filtroStatus" onchange="filtrarTabela()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600">
-          <option value="">Todos os Status</option>
-          <option value="Aguardando">Aguardando</option>
-          <option value="Convocado">Convocado</option>
-          <option value="Matriculado">Matriculado</option>
-          <option value="Desistente">Desistente</option>
-        </select>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+          <span class="text-xs font-semibold uppercase text-slate-400">Convocados</span>
+          <p id="cardConvocados" class="text-2xl font-bold text-blue-600 mt-1">0</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+          <span class="text-xs font-semibold uppercase text-slate-400">Matriculados</span>
+          <p id="cardMatriculados" class="text-2xl font-bold text-emerald-600 mt-1">0</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+          <span class="text-xs font-semibold uppercase text-slate-400">Desistentes / Cancelados</span>
+          <p id="cardDesistentes" class="text-2xl font-bold text-slate-500 mt-1">0</p>
+        </div>
       </div>
-      <button onclick="carregarDadosFila()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer">
-        <i class="fa-solid fa-rotate"></i> Atualizar
-      </button>
-    </div>
 
-    <!-- Tabela -->
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs text-slate-600">
-          <thead class="bg-slate-50 text-slate-700 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200">
+      <!-- Barra de Filtros -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Buscar Candidato / Protocolo</label>
+          <input type="text" id="buscaTexto" oninput="filtrarTabela()" placeholder="Nome, protocolo ou telefone..."
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Núcleo Cultural</label>
+          <select id="filtroNucleo" onchange="atualizarSelectCursosFiltro(); filtrarTabela();"
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+            <option value="">Todos os Núcleos</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Curso / Oficina</label>
+          <select id="filtroCurso" onchange="filtrarTabela()"
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+            <option value="">Todos os Cursos</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Período</label>
+          <select id="filtroPeriodo" onchange="filtrarTabela()"
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+            <option value="">Todos os Períodos</option>
+            <option value="Manhã">Manhã</option>
+            <option value="Tarde">Tarde</option>
+            <option value="Noite">Noite</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Status</label>
+          <select id="filtroStatus" onchange="filtrarTabela()"
+            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+            <option value="">Todos os Status</option>
+            <option value="Aguardando">Aguardando</option>
+            <option value="Convocado">Convocado</option>
+            <option value="Matriculado">Matriculado</option>
+            <option value="Desistente">Desistente</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Tabela da Fila -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+          <h2 class="font-bold text-sm text-slate-700">Lista de Candidatos (Ordem Cronológica)</h2>
+          <button onclick="carregarDadosFila()" class="text-xs text-indigo-600 hover:underline font-semibold">
+            ↻ Atualizar Lista
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-100 text-slate-600 text-xs uppercase border-b border-slate-200">
+                <th class="py-3 px-4">Pos.</th>
+                <th class="py-3 px-4">Candidato / Contatos</th>
+                <th class="py-3 px-4">Curso / Turno</th>
+                <th class="py-3 px-4">Inscrição / Protocolo</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4 text-right">Ações da Secretaria</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaCorpo" class="divide-y divide-slate-200 text-sm">
+              <tr>
+                <td colspan="6" class="py-8 text-center text-slate-400">Carregando registros...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ================= MODAL: MENSAGEM WHATSAPP ================= -->
+  <div id="modalMensagemWa" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-lg text-slate-800">💬 Configurar Mensagem do WhatsApp</h3>
+        <button onclick="fecharModalMensagemWa()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+      </div>
+      <p class="text-xs text-slate-600">
+        Edite abaixo o modelo de mensagem utilizado na convocação. Mantenha os marcadores
+        <code class="bg-slate-100 px-1 py-0.5 rounded font-bold text-indigo-700">{nome}</code>,
+        <code class="bg-slate-100 px-1 py-0.5 rounded font-bold text-indigo-700">{curso}</code>,
+        <code class="bg-slate-100 px-1 py-0.5 rounded font-bold text-indigo-700">{periodo}</code> e
+        <code class="bg-slate-100 px-1 py-0.5 rounded font-bold text-indigo-700">{protocolo}</code>
+        para preenchimento automático dos dados de cada candidato.
+      </p>
+      <textarea id="campoTextoWa" rows="11"
+        class="w-full p-3 rounded-lg border border-slate-300 text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="fecharModalMensagemWa()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">
+          Cancelar
+        </button>
+        <button onclick="salvarMensagemWa()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow">
+          Salvar Modelo no Banco
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: GERIR CURSOS E LIMITES ================= -->
+  <div id="modalCursos" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-4xl w-full p-6 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b pb-3 mb-4">
+        <h3 class="font-bold text-lg text-slate-800">📚 Catálogo de Cursos e Limite de Filas</h3>
+        <button onclick="fecharModalCursos()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+      </div>
+
+      <!-- Formulário para Adicionar / Atualizar Curso -->
+      <form id="formCurso" onsubmit="salvarCurso(event)" class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+        <input type="hidden" id="cursoIdEdicao" />
+        <div class="md:col-span-2">
+          <label class="font-semibold text-slate-600 block mb-1">Nome do Curso / Oficina *</label>
+          <input type="text" id="cursoNome" required placeholder="Ex: Violão" class="w-full px-3 py-1.5 rounded border border-slate-300" />
+        </div>
+        <div>
+          <label class="font-semibold text-slate-600 block mb-1">Núcleo *</label>
+          <input type="text" id="cursoNucleo" required placeholder="Ex: Música, Dança, Artes" class="w-full px-3 py-1.5 rounded border border-slate-300" />
+        </div>
+        <div>
+          <label class="font-semibold text-slate-600 block mb-1">Área</label>
+          <input type="text" id="cursoArea" placeholder="Ex: Cordas, Artes Visuais" class="w-full px-3 py-1.5 rounded border border-slate-300" />
+        </div>
+        <div>
+          <label class="font-semibold text-slate-600 block mb-1">Idade Mínima</label>
+          <input type="number" id="cursoIdadeMin" placeholder="Ex: 7" class="w-full px-3 py-1.5 rounded border border-slate-300" />
+        </div>
+        <div>
+          <label class="font-semibold text-slate-600 block mb-1">Idade Máxima</label>
+          <input type="number" id="cursoIdadeMax" placeholder="Vazio = Sem limite" class="w-full px-3 py-1.5 rounded border border-slate-300" />
+        </div>
+        <div>
+          <label class="font-semibold text-slate-600 block mb-1">Limite na Fila (Vagas)</label>
+          <input type="number" id="cursoLimiteFila" placeholder="Vazio/0 = Ilimitado" class="w-full px-3 py-1.5 rounded border border-slate-300" />
+        </div>
+        <div class="flex flex-col justify-center gap-1">
+          <span class="font-semibold text-slate-600">Turnos Oferecidos:</span>
+          <div class="flex items-center gap-3">
+            <label class="flex items-center gap-1"><input type="checkbox" id="cursoManha" checked /> Manhã</label>
+            <label class="flex items-center gap-1"><input type="checkbox" id="cursoTarde" checked /> Tarde</label>
+            <label class="flex items-center gap-1"><input type="checkbox" id="cursoNoite" checked /> Noite</label>
+          </div>
+        </div>
+        <div class="md:col-span-4 flex items-center justify-between pt-2 border-t border-slate-200">
+          <label class="flex items-center gap-2 font-semibold text-slate-700">
+            <input type="checkbox" id="cursoAtivo" checked /> Curso Ativo para Inscrições
+          </label>
+          <div class="flex gap-2">
+            <button type="button" onclick="limparFormCurso()" class="px-3 py-1.5 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold">
+              Limpar
+            </button>
+            <button type="submit" class="px-4 py-1.5 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow">
+              Salvar Curso
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Lista de Cursos -->
+      <div class="overflow-y-auto flex-1 border border-slate-200 rounded-xl">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead class="bg-slate-100 text-slate-600 uppercase sticky top-0">
             <tr>
-              <th class="px-4 py-3 text-center">Pos.</th>
-              <th class="px-4 py-3">Candidato / Contatos</th>
-              <th class="px-4 py-3">Curso / Info</th>
-              <th class="px-4 py-3">Inscrição</th>
-              <th class="px-4 py-3">Status</th>
-              <th class="px-4 py-3 text-right">Ações</th>
+              <th class="p-2.5">Curso</th>
+              <th class="p-2.5">Núcleo / Área</th>
+              <th class="p-2.5">Turnos</th>
+              <th class="p-2.5">Idade</th>
+              <th class="p-2.5">Limite Fila</th>
+              <th class="p-2.5">Status</th>
+              <th class="p-2.5 text-right">Ações</th>
             </tr>
           </thead>
-          <tbody id="tabelaCorpo" class="divide-y divide-slate-100">
-            <tr>
-              <td colspan="6" class="px-4 py-8 text-center text-slate-400">
-                <i class="fa-solid fa-spinner fa-spin text-lg mb-2"></i>
-                <p>A iniciar o painel...</p>
-              </td>
-            </tr>
-          </tbody>
+          <tbody id="listaCursosCorpo" class="divide-y divide-slate-200"></tbody>
         </table>
       </div>
     </div>
-  </main>
+  </div>
 
-  <!-- ================= MODAIS ================= -->
-  
-  <div id="modalAcessos" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] flex flex-col">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-        <div><h3 class="text-sm font-bold text-slate-800">Gestão de Acessos</h3></div>
-        <button onclick="fecharModalAcessos()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+  <!-- ================= MODAL: ACESSOS PERMITIDOS ================= -->
+  <div id="modalAcessos" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-lg text-slate-800">🔑 E-mails Autorizados</h3>
+        <button onclick="fecharModalAcessos()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
       </div>
-      <form onsubmit="adicionarAcesso(event)" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2.5">
-        <div class="flex gap-2">
-          <input type="email" id="novoEmailInput" required placeholder="E-mail (ex: joao@gmail.com)" class="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
-          <button type="submit" id="btnAdicionarAcesso" class="px-4 py-2 bg-indigo-600 text-white font-semibold text-xs rounded-xl cursor-pointer">Autorizar</button>
-        </div>
+      <form onsubmit="adicionarEmailPermitido(event)" class="flex gap-2">
+        <input type="email" id="novoEmailPermitido" required placeholder="novo.servidor@barretos.sp.gov.br"
+          class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-semibold">
+          Autorizar
+        </button>
       </form>
-      <div class="flex-1 overflow-y-auto divide-y divide-slate-100 mt-2" id="listaAcessosModal"></div>
-      <div class="pt-2 text-right border-t border-slate-100 mt-2">
-        <button onclick="fecharModalAcessos()" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs cursor-pointer">Fechar</button>
-      </div>
+      <ul id="listaEmailsPermitidos" class="divide-y divide-slate-200 max-h-60 overflow-y-auto text-sm"></ul>
     </div>
   </div>
 
-  <div id="modalCursos" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-3xl max-w-4xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] flex flex-col">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-        <div><h3 class="text-sm font-bold text-slate-800">Catálogo de Cursos</h3></div>
-        <button onclick="fecharModalCursos()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+  <!-- ================= MODAL: TROCAR SENHA ================= -->
+  <div id="modalTrocaSenha" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-lg text-slate-800">🔒 Alterar Minha Senha</h3>
+        <button onclick="fecharModalTrocaSenha()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
       </div>
-      <form onsubmit="adicionarCurso(event)" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2.5">
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-2">
-          <input type="text" id="novoCursoInput" required placeholder="Oficina..." class="md:col-span-3 px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs uppercase focus:outline-none">
-          <select id="novoCursoNucleo" required class="md:col-span-2 px-2 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium">
-            <option value="Dança">Dança</option><option value="Artes">Artes</option><option value="Música">Música</option>
-          </select>
-          <input type="text" id="novoCursoArea" required placeholder="Área..." class="md:col-span-2 px-2.5 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:outline-none">
-          <input type="number" id="novoCursoIdadeMin" min="0" placeholder="Id. Min" class="md:col-span-1 px-2 py-2 bg-white border border-slate-300 rounded-xl text-xs text-center focus:outline-none">
-          <input type="number" id="novoCursoIdadeMax" min="0" placeholder="Id. Max" class="md:col-span-1 px-2 py-2 bg-white border border-slate-300 rounded-xl text-xs text-center focus:outline-none">
-          <input type="number" id="novoCursoLimite" min="0" placeholder="Limite Vagas" class="md:col-span-2 px-2 py-2 bg-amber-50 border border-amber-300 rounded-xl text-xs text-center font-bold text-amber-900 focus:outline-none">
-          <button type="submit" id="btnAdicionarCurso" class="md:col-span-1 px-2 py-2 bg-indigo-600 text-white rounded-xl cursor-pointer"><i class="fa-solid fa-plus"></i></button>
+      <form onsubmit="processarTrocaSenha(event)" class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Senha Atual</label>
+          <input type="password" id="senhaAtual" required class="w-full px-3 py-2 rounded-lg border border-slate-300" />
         </div>
-      </form>
-      <div class="flex-1 overflow-y-auto divide-y divide-slate-100 pr-1 space-y-4" id="listaCursosModal"></div>
-      <div class="pt-2 text-right border-t border-slate-100">
-        <button onclick="fecharModalCursos()" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs cursor-pointer">Fechar</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modalQRCode" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 text-center space-y-4">
-      <div class="w-12 h-12 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-qrcode"></i></div>
-      <h3 class="text-base font-bold text-slate-800">QR Code</h3>
-      <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex justify-center items-center"><div id="areaQRCode"></div></div>
-      <div class="flex gap-2">
-        <button onclick="window.print()" class="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl text-xs cursor-pointer"><i class="fa-solid fa-print"></i> Imprimir</button>
-        <button onclick="fecharModalQRCode()" class="px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs cursor-pointer">Fechar</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modalSenha" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl max-w-xs w-full p-6 shadow-xl border border-slate-200 space-y-4">
-      <h3 class="text-sm font-bold text-slate-800">Alterar Palavra-passe</h3>
-      <form onsubmit="processarTrocaSenha(event)" class="space-y-3">
-        <div><input type="password" id="senhaAtualInput" required placeholder="Senha Atual" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs"></div>
-        <div><input type="password" id="senhaNovaInput" required minlength="6" placeholder="Nova Senha" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs"></div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nova Senha (mín. 6 caracteres)</label>
+          <input type="password" id="novaSenha" required minlength="6" class="w-full px-3 py-2 rounded-lg border border-slate-300" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Confirmar Nova Senha</label>
+          <input type="password" id="confirmarNovaSenha" required minlength="6" class="w-full px-3 py-2 rounded-lg border border-slate-300" />
+        </div>
         <div class="flex justify-end gap-2 pt-2">
-          <button type="button" onclick="fecharModalSenha()" class="px-3 py-2 text-slate-500 text-xs cursor-pointer">Cancelar</button>
-          <button type="submit" id="btnSalvarSenha" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs cursor-pointer">Salvar</button>
+          <button type="button" onclick="fecharModalTrocaSenha()" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold">
+            Cancelar
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold">
+            Atualizar Senha
+          </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- ================= SCRIPTS ================= -->
+  <!-- ================= SCRIPTS E LÓGICA DO SISTEMA ================= -->
   <script>
-    let registrosGlobais = []; 
-    let cursosBanco = [];
-    
-    // VARIÁVEIS DE AUDITORIA E PERMISSÕES
-    let emailUsuarioLogado = '';
+    // Lista de e-mails com visão de auditoria (Diretoria e Super Admin)
     const emailsDaDiretoria = [
-      'ca.gasparetto@gmail.com', 
-      'caggonca@trf3.jus.br', 
-      'ca.gasparetto@outlook.com'
+      'ca.gasparetto@gmail.com',
+      'caggonca@trf3.jus.br',
+      'ca.gasparetto@outlook.com',
+      'cemart@barretos.sp.gov.br'
     ];
 
-    function escapeHTML(str) {
-      if (!str) return '';
-      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    // Mensagem padrão de segurança caso a tabela config_sistema ainda não responda
+    const MENSAGEM_WA_PADRAO = `*CEMART - CENTRO MUNICIPAL DE ARTES*
+*CONVOCAÇÃO DE VAGA*
+
+Olá, {nome}!
+Informamos que surgiu uma vaga disponível para você na oficina de {curso} ({periodo})!
+Salientamos que é possível a realização da matrícula em apenas 1 (um) instrumento em concomitância com outra modalidade de ensino, ou seja, se você já estiver matriculado para aprender um instrumento não será possível realizar a matricula para outro instrumento.
+Seu protocolo de inscrição é: {protocolo}.
+- 📌 Próximo passo: Compareça à secretaria do CEMART no prazo de até *3 dias úteis* munido de documento de identidade para efetivar a sua matrícula.
+Caso não tenha mais interesse na vaga, favor responder a esta mensagem para que possamos liberar a oportunidade para o próximo da fila.
+Atenciosamente,
+*Secretaria CEMART*`;
+
+    let usuarioLogado = null;
+    let listaFilaCompleta = [];
+    let listaCursosCompleta = [];
+    let mensagemWaCache = MENSAGEM_WA_PADRAO;
+
+    // Utilitário de proteção contra XSS
+    function escaparHTML(texto) {
+      if (texto === null || texto === undefined) return '';
+      return String(texto)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
 
-    function formatarTelefoneExibicao(tel) {
-      if (!tel) return '';
-      const d = String(tel).replace(/\D/g, '');
-      if (d.length === 11) return d.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
-      if (d.length === 10) return d.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
-      return tel;
-    }
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      const corpo = document.getElementById('tabelaCorpo');
-      try {
-        if (typeof db === 'undefined') throw new Error('Falha de conexão com o Supabase.');
-
-        const sessionRes = await db.auth.getSession();
-        if (!sessionRes.data || !sessionRes.data.session) {
-          sessionStorage.removeItem('autenticado_cemart');
-          window.location.href = 'index.html';
-          return;
-        }
-
-        emailUsuarioLogado = sessionRes.data.session.user.email;
-
-        await carregarCursosFiltro();
-        await carregarDadosFila();
-
-      } catch (err) {
-        console.error('ERRO:', err);
-        corpo.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-rose-600 font-bold">Erro: ${escapeHTML(err.message)}</td></tr>`;
+    // Inicialização ao abrir a página
+    window.addEventListener('DOMContentLoaded', async () => {
+      const { data: { session } } = await db.auth.getSession();
+      if (session && session.user) {
+        await validarAcessoUsuario(session.user);
       }
     });
 
-    /* --- GESTÃO DE ACESSOS --- */
-    async function abrirModalAcessos() { document.getElementById('modalAcessos').classList.remove('hidden'); document.getElementById('modalAcessos').classList.add('flex'); await listarAcessos(); }
-    function fecharModalAcessos() { document.getElementById('modalAcessos').classList.add('hidden'); document.getElementById('modalAcessos').classList.remove('flex'); }
-    
-    async function listarAcessos() {
-      const listaEl = document.getElementById('listaAcessosModal');
-      listaEl.innerHTML = '<p class="text-center py-4 text-xs text-slate-400">Carregando...</p>';
+    async function realizarLogin(event) {
+      event.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+      const password = document.getElementById('loginSenha').value;
+      const btn = document.getElementById('btnEntrar');
+
+      btn.disabled = true;
+      btn.textContent = 'Autenticando...';
+      ocultarAlertaLogin();
+
       try {
-        const { data: usuarios, error } = await db.from('usuarios_permitidos').select('*').order('criado_em', { ascending: true });
-        if (error) throw error;
-        listaEl.innerHTML = '';
-        if (!usuarios || usuarios.length === 0) { listaEl.innerHTML = '<p class="text-center py-4 text-xs text-slate-400">Nenhum e-mail autorizado.</p>'; return; }
-        usuarios.forEach(u => {
-          const div = document.createElement('div');
-          div.className = 'py-3 flex items-center justify-between gap-3 px-2 hover:bg-slate-50 rounded-lg transition';
-          div.innerHTML = `<div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs"><i class="fa-solid fa-user"></i></div><div><span class="text-xs font-bold text-slate-800">${escapeHTML(u.email)}</span></div></div><button onclick="removerAcesso(${u.id}, '${encodeURIComponent(u.email)}')" class="px-2.5 py-1.5 bg-white border border-slate-200 text-slate-400 hover:text-rose-600 rounded-lg transition cursor-pointer"><i class="fa-solid fa-trash-can text-xs"></i></button>`;
-          listaEl.appendChild(div);
-        });
-      } catch (e) { listaEl.innerHTML = '<p class="text-center py-4 text-xs text-rose-500">Erro ao listar permissões.</p>'; }
+        const { data, error } = await db.auth.signInWithPassword({ email, password });
+        if (error) throw new Error('E-mail ou senha inválidos.');
+        await validarAcessoUsuario(data.user);
+      } catch (erro) {
+        mostrarAlertaLogin(erro.message, 'erro');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Entrar no Painel';
+      }
     }
 
-    async function adicionarAcesso(e) {
-      e.preventDefault(); 
-      const email = document.getElementById('novoEmailInput').value.trim().toLowerCase();
-      if (!email) return; 
-      const btn = document.getElementById('btnAdicionarAcesso'); btn.disabled = true;
-      try { 
-        const { error } = await db.from('usuarios_permitidos').insert([{ email: email }]); 
-        if (error) throw error; 
-        document.getElementById('novoEmailInput').value = ''; 
-        await listarAcessos(); 
-      } catch (err) { alert('Erro ao adicionar e-mail.'); } 
-      finally { btn.disabled = false; }
+    async function validarAcessoUsuario(user) {
+      const email = user.email.toLowerCase();
+      const { data, error } = await db
+        .from('usuarios_permitidos')
+        .select('email')
+        .ilike('email', email)
+        .maybeSingle();
+
+      if (error || !data) {
+        await db.auth.signOut();
+        mostrarAlertaLogin('Seu e-mail não consta na lista de operadores autorizados pelo CEMART.', 'erro');
+        return;
+      }
+
+      usuarioLogado = user;
+      document.getElementById('spanUsuarioLogado').textContent = user.email;
+      document.getElementById('telaLogin').classList.add('hidden');
+      document.getElementById('conteudoPainel').classList.remove('hidden');
+
+      await Promise.all([
+        carregarCursos(),
+        carregarDadosFila(),
+        carregarMensagemWaDoBanco()
+      ]);
     }
 
-    async function removerAcesso(id, emailCod) {
-      if (!confirm(`Revogar o acesso de ${decodeURIComponent(emailCod)}?`)) return;
-      try { await db.from('usuarios_permitidos').delete().eq('id', id); await listarAcessos(); } catch (err) { alert('Erro ao remover.'); }
+    async function realizarLogout() {
+      await db.auth.signOut();
+      usuarioLogado = null;
+      document.getElementById('conteudoPainel').classList.add('hidden');
+      document.getElementById('telaLogin').classList.remove('hidden');
     }
 
-    /* --- CURSOS E TABELA FILA --- */
-    async function carregarCursosFiltro() { 
-      const { data: cursos, error } = await db.from('cursos').select('*').order('nome_curso'); 
-      if (error) throw new Error(error.message);
-      cursosBanco = cursos || []; 
-      atualizarFiltroCursos(); 
+    async function esqueciMinhaSenha() {
+      const email = document.getElementById('loginEmail').value.trim();
+      if (!email) {
+        mostrarAlertaLogin('Digite seu e-mail no campo acima antes de clicar em "Esqueci minha senha".', 'erro');
+        return;
+      }
+      const urlRedirecionamento = window.location.origin + window.location.pathname.replace('painel-gestao.html', 'redefinir-senha.html');
+      const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: urlRedirecionamento });
+      if (error) {
+        mostrarAlertaLogin('Erro ao enviar e-mail de recuperação: ' + error.message, 'erro');
+      } else {
+        mostrarAlertaLogin('Link de redefinição enviado! Verifique sua caixa de entrada e spam.', 'sucesso');
+      }
     }
 
-    function atualizarFiltroCursos() {
-      const nucleoSel = document.getElementById('filtroNucleo').value; 
-      const select = document.getElementById('filtroCurso'); 
-      const valorAnterior = select.value;
-      select.innerHTML = '<option value="">Todos os Cursos</option>';
-      const filtrados = nucleoSel ? cursosBanco.filter(c => c.nucleo === nucleoSel) : cursosBanco;
-      filtrados.forEach(c => { 
-        if (c.ativo !== false) { 
-          const opt = document.createElement('option'); opt.value = c.nome_curso; opt.textContent = c.nome_curso; select.appendChild(opt); 
-        } 
-      });
-      if (valorAnterior && Array.from(select.options).some(o => o.value === valorAnterior)) select.value = valorAnterior;
+    function mostrarAlertaLogin(msg, tipo) {
+      const el = document.getElementById('alertaLogin');
+      el.textContent = msg;
+      el.className = 'mb-4 p-3 rounded-lg text-sm font-medium ' +
+        (tipo === 'erro' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200');
+      el.classList.remove('hidden');
+    }
+
+    function ocultarAlertaLogin() {
+      document.getElementById('alertaLogin').classList.add('hidden');
+    }
+
+    // ================= CARREGAMENTO DE CURSOS E FILA =================
+    async function carregarCursos() {
+      const { data, error } = await db
+        .from('cursos')
+        .select('*')
+        .order('nome_curso', { ascending: true });
+
+      if (!error && data) {
+        listaCursosCompleta = data;
+        popularFiltroNucleos();
+        atualizarSelectCursosFiltro();
+      }
+    }
+
+    function popularFiltroNucleos() {
+      const selectNucleo = document.getElementById('filtroNucleo');
+      const valorAtual = selectNucleo.value;
+      const nucleos = [...new Set(listaCursosCompleta.map(c => c.nucleo).filter(Boolean))].sort();
+
+      selectNucleo.innerHTML = '<option value="">Todos os Núcleos</option>' +
+        nucleos.map(n => `<option value="${escaparHTML(n)}">${escaparHTML(n)}</option>`).join('');
+      selectNucleo.value = valorAtual;
+    }
+
+    function atualizarSelectCursosFiltro() {
+      const nucleoSel = document.getElementById('filtroNucleo').value;
+      const selectCurso = document.getElementById('filtroCurso');
+      const valorAtual = selectCurso.value;
+
+      const cursosFiltrados = nucleoSel
+        ? listaCursosCompleta.filter(c => c.nucleo === nucleoSel)
+        : listaCursosCompleta;
+
+      selectCurso.innerHTML = '<option value="">Todos os Cursos</option>' +
+        cursosFiltrados.map(c => `<option value="${escaparHTML(c.nome_curso)}">${escaparHTML(c.nome_curso)}</option>`).join('');
+      selectCurso.value = valorAtual;
     }
 
     async function carregarDadosFila() {
-      const { data, error } = await db.from('fila_cemart').select('*').order('criado_em', { ascending: true });
-      if (error) throw new Error(error.message);
-      registrosGlobais = data || []; 
-      atualizarCards(registrosGlobais); 
+      const { data, error } = await db
+        .from('fila_cemart')
+        .select('*')
+        .order('criado_em', { ascending: true });
+
+      if (error) {
+        alert('Erro ao carregar a fila: ' + error.message);
+        return;
+      }
+
+      listaFilaCompleta = data || [];
+      atualizarCardsIndicadores();
       filtrarTabela();
     }
 
-    function renderizarTabela(lista) {
-      const corpo = document.getElementById('tabelaCorpo'); 
-      corpo.innerHTML = '';
-      if (!lista || lista.length === 0) { 
-        corpo.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-500 font-bold bg-slate-50">Nenhum registo encontrado.</td></tr>'; 
-        return; 
-      }
-      const contadores = {};
-      lista.forEach(reg => {
-        let posicaoTexto = '-';
-        if (reg.status === 'Aguardando') { 
-          const chave = `${reg.curso}_${reg.periodo}`; 
-          contadores[chave] = (contadores[chave] || 0) + 1; 
-          posicaoTexto = `${contadores[chave]}º`; 
-        }
-        
-        const dataFormatada = reg.criado_em ? new Date(reg.criado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
-        const fonePrincipal = reg.fone1 ? String(reg.fone1).replace(/\D/g, '') : '';
-        const foneSecundario = reg.fone2 ? String(reg.fone2).replace(/\D/g, '') : '';
-        let textoContatos = fonePrincipal ? formatarTelefoneExibicao(fonePrincipal) : '';
-        if (foneSecundario) textoContatos += (textoContatos ? ' / ' : '') + formatarTelefoneExibicao(foneSecundario);
-        if (!textoContatos) textoContatos = 'Sem telefone';
-        
-        const cursoInfo = cursosBanco.find(c => c.nome_curso === reg.curso);
-        const nucleoTag = cursoInfo && cursoInfo.nucleo ? `<span class="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded mr-1">${escapeHTML(cursoInfo.nucleo)}</span>` : '';
-        
-        let statusClass = 'bg-amber-100 text-amber-800 border-amber-200';
-        if (reg.status === 'Convocado') statusClass = 'bg-blue-100 text-blue-800 border-blue-200';
-        if (reg.status === 'Matriculado') statusClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
-        if (reg.status === 'Desistente') statusClass = 'bg-rose-100 text-rose-800 border-rose-200';
-
-        const telParaWhatsApp = fonePrincipal || foneSecundario;
-        let btnConvocar = '';
-        if (reg.status === 'Aguardando' && telParaWhatsApp) {
-          btnConvocar = `<button onclick="convocarWhatsApp(${reg.id}, '${encodeURIComponent(reg.nome_aluno || '')}', '${telParaWhatsApp}', '${encodeURIComponent(reg.curso || '')}', '${encodeURIComponent(reg.periodo || '')}')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer"><i class="fa-brands fa-whatsapp text-xs"></i> Convocar</button>`;
-        }
-
-        // AUDITORIA: Verifica se há dados e se o usuário logado é dono
-        let infoAuditoria = '';
-        if (reg.atualizado_por && emailsDaDiretoria.includes(emailUsuarioLogado)) {
-          infoAuditoria = `<p class="text-[9px] text-slate-400 mt-1.5 pt-1 border-t border-slate-200/50" title="Última alteração"><i class="fa-solid fa-user-pen mr-0.5"></i> ${escapeHTML(reg.atualizado_por)}</p>`;
-        }
-
-        const tr = document.createElement('tr'); 
-        tr.className = 'hover:bg-slate-50 transition';
-        tr.innerHTML = `
-          <td class="px-4 py-3 font-bold text-center text-indigo-700">${posicaoTexto}</td>
-          <td class="px-4 py-3">
-            <p class="font-bold text-slate-800">${escapeHTML(reg.nome_aluno)}</p>
-            <p class="text-[11px] text-slate-500 mt-0.5"><i class="fa-solid fa-phone text-[10px] text-slate-400 mr-1"></i>${textoContatos}</p>
-          </td>
-          <td class="px-4 py-3">
-            <div class="flex items-center">${nucleoTag}<span class="font-bold text-slate-700">${escapeHTML(reg.curso) || '-'}</span></div>
-            <p class="text-[11px] text-slate-400">${escapeHTML(reg.periodo) || '-'}</p>
-          </td>
-          <td class="px-4 py-3">
-            <p class="text-[11px] text-slate-500 mb-1">${dataFormatada}</p>
-            <span class="text-[10px] font-mono font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded inline-block border border-indigo-100" title="Protocolo de Inscrição">
-              <i class="fa-solid fa-hashtag text-[8px] mr-0.5"></i>${escapeHTML(reg.protocolo)}
-            </span>
-          </td>
-          <td class="px-4 py-3">
-            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold border ${statusClass}">${escapeHTML(reg.status)}</span>
-            ${infoAuditoria}
-          </td>
-          <td class="px-4 py-3 text-right">
-            <div class="inline-flex items-center gap-1.5">
-              ${btnConvocar}
-              <select onchange="atualizarStatus(${reg.id}, this.value)" class="text-[11px] px-2 py-1 bg-slate-100 border border-slate-200 rounded-lg cursor-pointer">
-                <option value="Aguardando" ${reg.status === 'Aguardando' ? 'selected' : ''}>Aguardando</option>
-                <option value="Convocado" ${reg.status === 'Convocado' ? 'selected' : ''}>Convocado</option>
-                <option value="Matriculado" ${reg.status === 'Matriculado' ? 'selected' : ''}>Matriculado</option>
-                <option value="Desistente" ${reg.status === 'Desistente' ? 'selected' : ''}>Desistente</option>
-              </select>
-              <button onclick="excluirCandidato(${reg.id}, '${encodeURIComponent(reg.nome_aluno || '')}')" class="px-2 py-1 bg-white border border-slate-200 text-slate-400 hover:text-rose-600 rounded-lg transition cursor-pointer"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
-            </div>
-          </td>
-        `;
-        corpo.appendChild(tr);
+    function atualizarCardsIndicadores() {
+      const contagens = { Aguardando: 0, Convocado: 0, Matriculado: 0, Desistente: 0 };
+      listaFilaCompleta.forEach(item => {
+        const st = item.status || 'Aguardando';
+        if (contagens[st] !== undefined) contagens[st]++;
       });
-    }
 
-    async function atualizarStatus(id, novoStatus) { 
-      try { 
-        const { error } = await db.from('fila_cemart').update({ status: novoStatus }).eq('id', id); 
-        if (error) throw error;
-        await carregarDadosFila();
-      } catch (err) { alert('Erro ao atualizar status.'); } 
-    }
-
-    async function convocarWhatsApp(id, nomeCod, tel, cursoCod, perCod) { 
-      const nome = decodeURIComponent(nomeCod); 
-      if (!confirm(`Confirmar convocação de ${nome}?`)) return; 
-      try { 
-        await atualizarStatus(id, 'Convocado'); 
-        const msg = `*CEMART - CONVOCAÇÃO DE VAGA*\n\nOlá, *${nome}*!\nSurgiu vaga em *${decodeURIComponent(cursoCod)}*!\nCompareça à secretaria em até *2 dias úteis*.`; 
-        window.open(`https://api.whatsapp.com/send?phone=55${tel}&text=${encodeURIComponent(msg)}`, '_blank'); 
-      } catch (err) { alert('Erro na convocação.'); } 
-    }
-
-    async function excluirCandidato(id, nomeCod) { 
-      if (!confirm(`EXCLUIR ${decodeURIComponent(nomeCod)}?`)) return; 
-      try { 
-        const { error } = await db.from('fila_cemart').delete().eq('id', id); 
-        if (error) throw error;
-        registrosGlobais = registrosGlobais.filter(r => r.id !== id); 
-        atualizarCards(registrosGlobais); 
-        filtrarTabela(); 
-      } catch (err) { alert('Erro ao excluir registro.'); } 
-    }
-
-    function atualizarCards(lista) { 
-      document.getElementById('totalRegistros').innerText = lista.length; 
-      document.getElementById('totalAguardando').innerText = lista.filter(r => r.status === 'Aguardando').length; 
-      document.getElementById('totalConvocados').innerText = lista.filter(r => r.status === 'Convocado').length; 
-      document.getElementById('totalMatriculados').innerText = lista.filter(r => r.status === 'Matriculado').length; 
+      document.getElementById('cardAguardando').textContent = contagens.Aguardando;
+      document.getElementById('cardConvocados').textContent = contagens.Convocado;
+      document.getElementById('cardMatriculados').textContent = contagens.Matriculado;
+      document.getElementById('cardDesistentes').textContent = contagens.Desistente;
     }
 
     function filtrarTabela() {
-      const texto = document.getElementById('buscaTexto').value.toLowerCase(); 
-      const nucleo = document.getElementById('filtroNucleo').value; 
-      const curso = document.getElementById('filtroCurso').value; 
+      const termo = document.getElementById('buscaTexto').value.trim().toLowerCase();
+      const nucleo = document.getElementById('filtroNucleo').value;
+      const curso = document.getElementById('filtroCurso').value;
+      const periodo = document.getElementById('filtroPeriodo').value;
       const status = document.getElementById('filtroStatus').value;
-      const filtrados = registrosGlobais.filter(r => {
-        const nome = (r.nome_aluno || '').toLowerCase(); const prot = (r.protocolo || '').toLowerCase(); const bateTexto = nome.includes(texto) || prot.includes(texto);
-        let bateNucleo = true; if (nucleo) { const cInfo = cursosBanco.find(c => c.nome_curso === r.curso); bateNucleo = cInfo && cInfo.nucleo === nucleo; }
-        const bateCurso = curso === '' || r.curso === curso; const bateStatus = status === '' || r.status === status; return bateTexto && bateNucleo && bateCurso && bateStatus;
-      });
-      renderizarTabela(filtrados);
-    }
 
-    /* --- CURSOS MODAL --- */
-    async function abrirModalCursos() { document.getElementById('modalCursos').classList.remove('hidden'); document.getElementById('modalCursos').classList.add('flex'); await listarCursosModal(); }
-    function fecharModalCursos() { document.getElementById('modalCursos').classList.add('hidden'); document.getElementById('modalCursos').classList.remove('flex'); carregarCursosFiltro(); }
-    
-    async function listarCursosModal() {
-      const listaEl = document.getElementById('listaCursosModal'); 
-      const scrollPos = listaEl.scrollTop;
-      listaEl.innerHTML = '<p class="text-center py-4 text-xs text-slate-400">Carregando...</p>';
-      try {
-        const { data: cursos, error } = await db.from('cursos').select('*').order('nome_curso');
-        if (error) throw error;
-        const grupos = {};
-        (cursos || []).forEach(c => { const n = c.nucleo || 'Outros'; if (!grupos[n]) grupos[n] = []; grupos[n].push(c); });
-        
-        listaEl.innerHTML = '';
-        for (const [nucleo, lista] of Object.entries(grupos)) {
-          const container = document.createElement('div'); container.className = 'pt-2'; 
-          container.innerHTML = `<div class="bg-indigo-50/80 px-3 py-1.5 rounded-xl font-bold text-xs text-indigo-900 mb-2">Núcleo de ${escapeHTML(nucleo)}</div>`;
-          const divFilhos = document.createElement('div'); divFilhos.className = 'divide-y divide-slate-100 pl-1';
-          
-          lista.forEach(c => {
-            const row = document.createElement('div'); row.className = 'py-3 flex flex-col md:flex-row md:items-center justify-between gap-3';
-            row.innerHTML = `
-              <div class="flex items-center gap-2 min-w-[180px]">
-                <span class="w-2.5 h-2.5 rounded-full ${c.ativo ? 'bg-emerald-500' : 'bg-slate-300'}"></span>
-                <div>
-                  <span class="text-xs font-semibold ${c.ativo ? 'text-slate-800' : 'text-slate-400 line-through'}">${escapeHTML(c.nome_curso)}</span>
-                  <p class="text-[10px] text-slate-400">${escapeHTML(c.area) || 'Geral'}</p>
-                </div>
-              </div>
-              <div class="flex flex-wrap items-center gap-2">
-                <div class="flex items-center gap-1.5 text-[11px] bg-slate-50 px-2 py-1 rounded-xl border border-slate-200">
-                  <span class="text-slate-500">Idade:</span>
-                  <input type="number" min="0" value="${c.idade_minima || 0}" onchange="atualizarCampoCurso(${c.id_curso}, 'idade_minima', this.value)" class="w-9 px-1 py-0.5 bg-white border border-slate-300 rounded text-center text-xs font-bold text-slate-700">
-                  <span class="text-slate-400">a</span>
-                  <input type="number" min="0" value="${c.idade_maxima || ''}" onchange="atualizarCampoCurso(${c.id_curso}, 'idade_maxima', this.value)" class="w-9 px-1 py-0.5 bg-white border border-slate-300 rounded text-center text-xs font-bold text-slate-700">
-                </div>
-                <div class="flex items-center gap-1.5 text-[11px] bg-amber-50 px-2 py-1 rounded-xl border border-amber-200">
-                  <span class="text-amber-700">Limite:</span>
-                  <input type="number" min="0" value="${c.limite_fila || 0}" onchange="atualizarCampoCurso(${c.id_curso}, 'limite_fila', this.value)" class="w-12 px-1 py-0.5 bg-white border border-amber-300 rounded text-center text-xs font-bold text-amber-900">
-                </div>
-              </div>
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <button onclick="alternarTurnoCurso(${c.id_curso}, 'manha', ${c.manha !== false})" class="px-2 py-0.5 rounded text-[10px] font-bold border ${c.manha !== false && c.ativo ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-400'}">Manhã</button>
-                <button onclick="alternarTurnoCurso(${c.id_curso}, 'tarde', ${c.tarde !== false})" class="px-2 py-0.5 rounded text-[10px] font-bold border ${c.tarde !== false && c.ativo ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-400'}">Tarde</button>
-                <button onclick="alternarTurnoCurso(${c.id_curso}, 'noite', ${c.noite !== false})" class="px-2 py-0.5 rounded text-[10px] font-bold border ${c.noite !== false && c.ativo ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-400'}">Noite</button>
-                <button onclick="alternarStatusCurso(${c.id_curso}, ${c.ativo})" class="ml-1 px-2 py-0.5 rounded text-[10px] font-semibold border ${c.ativo ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}">${c.ativo ? 'Inativar' : 'Ativar'}</button>
-              </div>
-            `;
-            divFilhos.appendChild(row);
-          });
-          container.appendChild(divFilhos); listaEl.appendChild(container);
+      // Mapa de curso -> núcleo
+      const mapaCursoNucleo = {};
+      listaCursosCompleta.forEach(c => { mapaCursoNucleo[c.nome_curso] = c.nucleo; });
+
+      // Calcula a posição na fila ativa (apenas para candidatos "Aguardando" dentro do mesmo curso e período)
+      const contadorPosicao = {};
+      const posicoesPorId = {};
+      listaFilaCompleta.forEach(item => {
+        if ((item.status || 'Aguardando') === 'Aguardando') {
+          const chaveFila = `${item.curso}||${item.periodo}`;
+          contadorPosicao[chaveFila] = (contadorPosicao[chaveFila] || 0) + 1;
+          posicoesPorId[item.id] = contadorPosicao[chaveFila];
         }
-        setTimeout(() => { listaEl.scrollTop = scrollPos; }, 10);
-      } catch (e) { listaEl.innerHTML = '<p class="text-center text-rose-500">Erro ao carregar cursos.</p>'; }
+      });
+
+      const filtrados = listaFilaCompleta.filter(item => {
+        const nome = (item.nome_aluno || '').toLowerCase();
+        const prot = (item.protocolo || '').toLowerCase();
+        const f1 = (item.fone1 || '').toLowerCase();
+        const passaTexto = !termo || nome.includes(termo) || prot.includes(termo) || f1.includes(termo);
+
+        const passaNucleo = !nucleo || mapaCursoNucleo[item.curso] === nucleo;
+        const passaCurso = !curso || item.curso === curso;
+        const passaPeriodo = !periodo || item.periodo === periodo;
+        const passaStatus = !status || (item.status || 'Aguardando') === status;
+
+        return passaTexto && passaNucleo && passaCurso && passaPeriodo && passaStatus;
+      });
+
+      renderizarTabela(filtrados, posicoesPorId);
     }
 
-    async function atualizarCampoCurso(idCurso, campo, valor) { try { const updateData = {}; updateData[campo] = valor === '' ? null : parseInt(valor, 10); await db.from('cursos').update(updateData).eq('id_curso', idCurso); } catch (e) { alert('Erro ao atualizar campo.'); } }
-    async function alternarTurnoCurso(idCurso, turno, valorAtual) { try { const updateData = {}; updateData[turno] = !valorAtual; await db.from('cursos').update(updateData).eq('id_curso', idCurso); await listarCursosModal(); } catch (e) {} }
-    async function alternarStatusCurso(idCurso, statusAtual) { try { await db.from('cursos').update({ ativo: !statusAtual }).eq('id_curso', idCurso); await listarCursosModal(); } catch (e) {} }
-    
-    async function adicionarCurso(e) {
-      e.preventDefault(); 
-      const nome = document.getElementById('novoCursoInput').value.trim(); 
-      if (!nome) return; 
-      document.getElementById('btnAdicionarCurso').disabled = true;
-      try { 
-        const { error } = await db.from('cursos').insert([{ 
-          nome_curso: nome, nucleo: document.getElementById('novoCursoNucleo').value, area: document.getElementById('novoCursoArea').value.trim() || 'Geral', 
-          idade_minima: document.getElementById('novoCursoIdadeMin').value ? parseInt(document.getElementById('novoCursoIdadeMin').value) : 0, 
-          idade_maxima: document.getElementById('novoCursoIdadeMax').value ? parseInt(document.getElementById('novoCursoIdadeMax').value) : null, 
-          limite_fila: document.getElementById('novoCursoLimite').value ? parseInt(document.getElementById('novoCursoLimite').value) : 0, 
-          ativo: true, manha: true, tarde: true, noite: true 
-        }]); 
-        if (error) throw error;
-        e.target.reset(); await listarCursosModal(); 
-      } catch (err) { alert('Erro ao cadastrar curso.'); } 
-      finally { document.getElementById('btnAdicionarCurso').disabled = false; }
+    function renderizarTabela(lista, posicoesPorId) {
+      const corpo = document.getElementById('tabelaCorpo');
+      if (!lista.length) {
+        corpo.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-slate-400">Nenhum candidato encontrado com os filtros selecionados.</td></tr>';
+        return;
+      }
+
+      const exibirAuditoria = usuarioLogado && emailsDaDiretoria.includes(usuarioLogado.email.toLowerCase());
+
+      corpo.innerHTML = lista.map(item => {
+        const pos = posicoesPorId[item.id] ? `${posicoesPorId[item.id]}º` : '—';
+        const dataInscricao = item.criado_em ? new Date(item.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+        const dataNascFormatada = item.data_nasc ? item.data_nasc.split('-').reverse().join('/') : '';
+        const statusAtual = item.status || 'Aguardando';
+
+        const coresStatus = {
+          'Aguardando': 'bg-amber-50 text-amber-800 border-amber-300',
+          'Convocado': 'bg-blue-50 text-blue-800 border-blue-300',
+          'Matriculado': 'bg-emerald-50 text-emerald-800 border-emerald-300',
+          'Desistente': 'bg-slate-100 text-slate-600 border-slate-300'
+        };
+
+        const badgeAuditoria = (exibirAuditoria && item.atualizado_por)
+          ? `<div class="mt-1 text-[10px] text-slate-400">Editado por: <span class="font-medium text-slate-500">${escaparHTML(item.atualizado_por)}</span></div>`
+          : '';
+
+        return `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-3 px-4 font-bold text-indigo-700">${pos}</td>
+            <td class="py-3 px-4">
+              <div class="font-semibold text-slate-800">${escaparHTML(item.nome_aluno)}</div>
+              <div class="text-xs text-slate-500">
+                ${dataNascFormatada ? `Nasc: ${escaparHTML(dataNascFormatada)}` : ''}
+                ${item.nome_responsavel ? ` | Resp: ${escaparHTML(item.nome_responsavel)}` : ''}
+              </div>
+              <div class="text-xs text-slate-600 font-medium mt-0.5">
+                📱 ${escaparHTML(item.fone1 || '')} ${item.fone2 ? ` / ${escaparHTML(item.fone2)}` : ''}
+              </div>
+            </td>
+            <td class="py-3 px-4">
+              <div class="font-semibold text-slate-800">${escaparHTML(item.curso)}</div>
+              <div class="text-xs text-slate-500">${escaparHTML(item.periodo || '')} ${item.nivel ? `• ${escaparHTML(item.nivel)}` : ''}</div>
+            </td>
+            <td class="py-3 px-4">
+              <div class="text-xs text-slate-700">${escaparHTML(dataInscricao)}</div>
+              <div class="inline-block mt-1 px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-mono font-bold text-slate-700">
+                ${escaparHTML(item.protocolo || 'Sem protocolo')}
+              </div>
+              ${badgeAuditoria}
+            </td>
+            <td class="py-3 px-4">
+              <select onchange="atualizarStatus(${item.id}, this.value)"
+                class="px-2.5 py-1.5 rounded-lg border text-xs font-semibold ${coresStatus[statusAtual] || 'bg-white'}">
+                <option value="Aguardando" ${statusAtual === 'Aguardando' ? 'selected' : ''}>Aguardando</option>
+                <option value="Convocado" ${statusAtual === 'Convocado' ? 'selected' : ''}>Convocado</option>
+                <option value="Matriculado" ${statusAtual === 'Matriculado' ? 'selected' : ''}>Matriculado</option>
+                <option value="Desistente" ${statusAtual === 'Desistente' ? 'selected' : ''}>Desistente</option>
+              </select>
+            </td>
+            <td class="py-3 px-4 text-right space-x-1 whitespace-nowrap">
+              <button onclick="convocarWhatsApp(${item.id})"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow-sm">
+                WhatsApp
+              </button>
+              <button onclick="excluirCandidato(${item.id})"
+                class="bg-rose-50 hover:bg-rose-100 text-rose-600 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition border border-rose-200"
+                title="Excluir registro">
+                🗑️
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
-    /* --- UTILIDADES, QR CODE, EXPORTAR --- */
-    let qrcodeInstancia = null;
-    function abrirModalQRCode() { document.getElementById('modalQRCode').classList.remove('hidden'); document.getElementById('modalQRCode').classList.add('flex'); if (!qrcodeInstancia) { qrcodeInstancia = new QRCode(document.getElementById('areaQRCode'), { text: window.location.origin + window.location.pathname.replace('painel-gestao.html', 'inscricao.html'), width: 180, height: 180, colorDark: "#1e1b4b", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H }); } }
-    function fecharModalQRCode() { document.getElementById('modalQRCode').classList.add('hidden'); document.getElementById('modalQRCode').classList.remove('flex'); }
-    
-    function exportarCSV() { 
-      if (registrosGlobais.length === 0) return alert('Sem registros.'); 
-      let csv = '\uFEFFProtocolo;Aluno;Telefone 1;Telefone 2;Curso;Período;Status;Data Inscrição\n'; 
-      registrosGlobais.forEach(r => { csv += `"${escapeHTML(r.protocolo)}";"${escapeHTML(r.nome_aluno)}";"${formatarTelefoneExibicao(r.fone1)}";"${formatarTelefoneExibicao(r.fone2)}";"${escapeHTML(r.curso)}";"${escapeHTML(r.periodo)}";"${escapeHTML(r.status)}";"${r.criado_em ? new Date(r.criado_em).toLocaleDateString('pt-BR') : ''}"\n`; }); 
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `fila_cemart.csv`; link.click(); 
-    }
-    
-    function abrirModalSenha() { document.getElementById('modalSenha').classList.remove('hidden'); document.getElementById('modalSenha').classList.add('flex'); }
-    function fecharModalSenha() { document.getElementById('modalSenha').classList.add('hidden'); document.getElementById('modalSenha').classList.remove('flex'); }
-    
-    async function processarTrocaSenha(e) { 
-      e.preventDefault(); const btn = document.getElementById('btnSalvarSenha'); btn.disabled = true; btn.innerText = 'A salvar...';
-      const senhaAtual = document.getElementById('senhaAtualInput').value; const novaSenha = document.getElementById('senhaNovaInput').value;
-      try {
-        const { data: { user }, error: userError } = await db.auth.getUser();
-        if (userError || !user) throw new Error('Utilizador não identificado.');
-        
-        const { error: signInError } = await db.auth.signInWithPassword({ email: user.email, password: senhaAtual });
-        if (signInError) throw new Error('A palavra-passe atual está incorreta.');
-        
-        const { error } = await db.auth.updateUser({ password: novaSenha });
-        if (error) throw error;
-        
-        alert('Palavra-passe atualizada com sucesso!'); fecharModalSenha(); document.getElementById('senhaAtualInput').value = ''; document.getElementById('senhaNovaInput').value = '';
-      } catch (err) { alert(err.message || 'Erro ao atualizar a palavra-passe.'); } finally { btn.disabled = false; btn.innerText = 'Salvar'; }
+    async function atualizarStatus(idCandidato, novoStatus) {
+      const emailOperador = usuarioLogado ? usuarioLogado.email : 'sistema';
+      const { error } = await db
+        .from('fila_cemart')
+        .update({ status: novoStatus, atualizado_por: emailOperador })
+        .eq('id', idCandidato);
+
+      if (error) {
+        alert('Erro ao atualizar status: ' + error.message);
+        return;
+      }
+      await carregarDadosFila();
     }
 
-    async function fazerLogout() { 
-      sessionStorage.removeItem('autenticado_cemart');
-      try { await db.auth.signOut(); } catch (e) { console.error('Erro ao sair:', e); }
-      window.location.href = 'index.html'; 
+    async function excluirCandidato(idCandidato) {
+      if (!confirm('Tem certeza que deseja excluir permanentemente este registro da fila?')) return;
+      const { error } = await db.from('fila_cemart').delete().eq('id', idCandidato);
+      if (error) {
+        alert('Erro ao excluir: ' + error.message);
+        return;
+      }
+      await carregarDadosFila();
+    }
+
+    // ================= WHATSAPP DINÂMICO COM SUPABASE =================
+    async function carregarMensagemWaDoBanco() {
+      const { data, error } = await db
+        .from('config_sistema')
+        .select('valor')
+        .eq('chave', 'mensagem_whatsapp')
+        .maybeSingle();
+
+      if (!error && data && data.valor) {
+        mensagemWaCache = data.valor;
+      }
+    }
+
+    async function convocarWhatsApp(idCandidato) {
+      const candidato = listaFilaCompleta.find(c => c.id === idCandidato);
+      if (!candidato) return;
+
+      // Busca sempre a versão mais recente do banco no momento do clique
+      await carregarMensagemWaDoBanco();
+
+      const mensagemFinal = mensagemWaCache
+        .replace(/\{nome\}/g, candidato.nome_aluno || '')
+        .replace(/\{curso\}/g, candidato.curso || '')
+        .replace(/\{periodo\}/g, candidato.periodo || '')
+        .replace(/\{protocolo\}/g, candidato.protocolo || '');
+
+      const foneLimpo = (candidato.fone1 || '').replace(/\D/g, '');
+      if (!foneLimpo) {
+        alert('Este candidato não possui um telefone válido cadastrado.');
+        return;
+      }
+
+      const urlWa = `https://wa.me/55${foneLimpo}?text=${encodeURIComponent(mensagemFinal)}`;
+      window.open(urlWa, '_blank');
+    }
+
+    async function abrirModalMensagemWa() {
+      await carregarMensagemWaDoBanco();
+      document.getElementById('campoTextoWa').value = mensagemWaCache;
+      document.getElementById('modalMensagemWa').classList.remove('hidden');
+    }
+
+    function fecharModalMensagemWa() {
+      document.getElementById('modalMensagemWa').classList.add('hidden');
+    }
+
+    async function salvarMensagemWa() {
+      const novoTexto = document.getElementById('campoTextoWa').value.trim();
+      if (!novoTexto) {
+        alert('A mensagem não pode ficar em branco.');
+        return;
+      }
+
+      const { error } = await db
+        .from('config_sistema')
+        .upsert({ chave: 'mensagem_whatsapp', valor: novoTexto }, { onConflict: 'chave' });
+
+      if (error) {
+        alert('Erro ao salvar a mensagem no Supabase: ' + error.message);
+        return;
+      }
+
+      mensagemWaCache = novoTexto;
+      alert('Modelo de mensagem do WhatsApp atualizado com sucesso!');
+      fecharModalMensagemWa();
+    }
+
+    // ================= MODAL DE CURSOS E LIMITES =================
+    function abrirModalCursos() {
+      renderizarListaCursosModal();
+      document.getElementById('modalCursos').classList.remove('hidden');
+    }
+
+    function fecharModalCursos() {
+      document.getElementById('modalCursos').classList.add('hidden');
+      limparFormCurso();
+    }
+
+    function renderizarListaCursosModal() {
+      const corpo = document.getElementById('listaCursosCorpo');
+      if (!listaCursosCompleta.length) {
+        corpo.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">Nenhum curso cadastrado.</td></tr>';
+        return;
+      }
+
+      corpo.innerHTML = listaCursosCompleta.map(c => {
+        const turnos = [
+          c.manha ? 'M' : null,
+          c.tarde ? 'T' : null,
+          c.noite ? 'N' : null
+        ].filter(Boolean).join(' / ') || 'Nenhum';
+
+        const faixaEtaria = `${c.idade_minima ?? 0} a ${c.idade_maxima ?? 'Livre'}`;
+        const limite = c.limite_fila ? `${c.limite_fila} vagas` : 'Ilimitado';
+
+        return `
+          <tr class="hover:bg-slate-50">
+            <td class="p-2.5 font-semibold text-slate-800">${escaparHTML(c.nome_curso)}</td>
+            <td class="p-2.5 text-slate-600">${escaparHTML(c.nucleo || '')} ${c.area ? `(${escaparHTML(c.area)})` : ''}</td>
+            <td class="p-2.5">${turnos}</td>
+            <td class="p-2.5">${faixaEtaria}</td>
+            <td class="p-2.5 font-semibold text-indigo-700">${limite}</td>
+            <td class="p-2.5">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${c.ativo ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                ${c.ativo ? 'Ativo' : 'Inativo'}
+              </span>
+            </td>
+            <td class="p-2.5 text-right space-x-1">
+              <button onclick="preencherEdicaoCurso(${c.id_curso})" class="text-indigo-600 hover:underline font-semibold">Editar</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function preencherEdicaoCurso(idCurso) {
+      const c = listaCursosCompleta.find(item => item.id_curso === idCurso);
+      if (!c) return;
+
+      document.getElementById('cursoIdEdicao').value = c.id_curso;
+      document.getElementById('cursoNome').value = c.nome_curso || '';
+      document.getElementById('cursoNucleo').value = c.nucleo || '';
+      document.getElementById('cursoArea').value = c.area || '';
+      document.getElementById('cursoIdadeMin').value = c.idade_minima ?? '';
+      document.getElementById('cursoIdadeMax').value = c.idade_maxima ?? '';
+      document.getElementById('cursoLimiteFila').value = c.limite_fila ?? '';
+      document.getElementById('cursoManha').checked = !!c.manha;
+      document.getElementById('cursoTarde').checked = !!c.tarde;
+      document.getElementById('cursoNoite').checked = !!c.noite;
+      document.getElementById('cursoAtivo').checked = !!c.ativo;
+    }
+
+    function limparFormCurso() {
+      document.getElementById('formCurso').reset();
+      document.getElementById('cursoIdEdicao').value = '';
+    }
+
+    async function salvarCurso(event) {
+      event.preventDefault();
+      const idEdicao = document.getElementById('cursoIdEdicao').value;
+
+      const dadosCurso = {
+        nome_curso: document.getElementById('cursoNome').value.trim(),
+        nucleo: document.getElementById('cursoNucleo').value.trim(),
+        area: document.getElementById('cursoArea').value.trim() || null,
+        idade_minima: document.getElementById('cursoIdadeMin').value ? parseInt(document.getElementById('cursoIdadeMin').value, 10) : 0,
+        idade_maxima: document.getElementById('cursoIdadeMax').value ? parseInt(document.getElementById('cursoIdadeMax').value, 10) : null,
+        limite_fila: document.getElementById('cursoLimiteFila').value ? parseInt(document.getElementById('cursoLimiteFila').value, 10) : null,
+        manha: document.getElementById('cursoManha').checked,
+        tarde: document.getElementById('cursoTarde').checked,
+        noite: document.getElementById('cursoNoite').checked,
+        ativo: document.getElementById('cursoAtivo').checked
+      };
+
+      let erroOperacao = null;
+      if (idEdicao) {
+        const { error } = await db.from('cursos').update(dadosCurso).eq('id_curso', idEdicao);
+        erroOperacao = error;
+      } else {
+        const { error } = await db.from('cursos').insert([dadosCurso]);
+        erroOperacao = error;
+      }
+
+      if (erroOperacao) {
+        alert('Erro ao salvar curso: ' + erroOperacao.message);
+        return;
+      }
+
+      limparFormCurso();
+      await carregarCursos();
+      renderizarListaCursosModal();
+    }
+
+    // ================= MODAL DE ACESSOS =================
+    async function abrirModalAcessos() {
+      document.getElementById('modalAcessos').classList.remove('hidden');
+      await carregarEmailsPermitidos();
+    }
+
+    function fecharModalAcessos() {
+      document.getElementById('modalAcessos').classList.add('hidden');
+    }
+
+    async function carregarEmailsPermitidos() {
+      const { data, error } = await db.from('usuarios_permitidos').select('*').order('criado_em', { ascending: true });
+      const ul = document.getElementById('listaEmailsPermitidos');
+      if (error || !data) {
+        ul.innerHTML = '<li class="py-2 text-slate-400">Erro ao carregar lista.</li>';
+        return;
+      }
+
+      ul.innerHTML = data.map(item => `
+        <li class="py-2.5 flex items-center justify-between">
+          <span class="font-medium text-slate-700">${escaparHTML(item.email)}</span>
+          <button onclick="removerEmailPermitido(${item.id}, '${escaparHTML(item.email)}')"
+            class="text-xs text-rose-600 hover:underline font-semibold">Remover</button>
+        </li>
+      `).join('');
+    }
+
+    async function adicionarEmailPermitido(event) {
+      event.preventDefault();
+      const input = document.getElementById('novoEmailPermitido');
+      const email = input.value.trim().toLowerCase();
+      if (!email) return;
+
+      const { error } = await db.from('usuarios_permitidos').insert([{ email }]);
+      if (error) {
+        alert('Erro ao autorizar e-mail: ' + error.message);
+        return;
+      }
+      input.value = '';
+      await carregarEmailsPermitidos();
+    }
+
+    async function removerEmailPermitido(id, email) {
+      if (usuarioLogado && usuarioLogado.email.toLowerCase() === email.toLowerCase()) {
+        alert('Você não pode remover o seu próprio e-mail enquanto estiver logado.');
+        return;
+      }
+      if (!confirm(`Deseja remover a autorização de acesso para ${email}?`)) return;
+
+      const { error } = await db.from('usuarios_permitidos').delete().eq('id', id);
+      if (error) {
+        alert('Erro ao remover: ' + error.message);
+        return;
+      }
+      await carregarEmailsPermitidos();
+    }
+
+    // ================= MODAL DE TROCA DE SENHA =================
+    function abrirModalTrocaSenha() {
+      document.getElementById('modalTrocaSenha').classList.remove('hidden');
+    }
+
+    function fecharModalTrocaSenha() {
+      document.getElementById('modalTrocaSenha').classList.add('hidden');
+    }
+
+    async function processarTrocaSenha(event) {
+      event.preventDefault();
+      const senhaAtual = document.getElementById('senhaAtual').value;
+      const novaSenha = document.getElementById('novaSenha').value;
+      const confirmar = document.getElementById('confirmarNovaSenha').value;
+
+      if (novaSenha !== confirmar) {
+        alert('A nova senha e a confirmação não coincidem.');
+        return;
+      }
+
+      // Valida a senha atual antes de permitir a troca
+      const { error: erroAuth } = await db.auth.signInWithPassword({
+        email: usuarioLogado.email,
+        password: senhaAtual
+      });
+
+      if (erroAuth) {
+        alert('A senha atual informada está incorreta.');
+        return;
+      }
+
+      const { error } = await db.auth.updateUser({ password: novaSenha });
+      if (error) {
+        alert('Erro ao atualizar a senha: ' + error.message);
+        return;
+      }
+
+      alert('Senha atualizada com sucesso!');
+      document.getElementById('senhaAtual').value = '';
+      document.getElementById('novaSenha').value = '';
+      document.getElementById('confirmarNovaSenha').value = '';
+      fecharModalTrocaSenha();
+    }
+
+    // ================= EXPORTAR CSV =================
+    function exportarCSV() {
+      if (!listaFilaCompleta.length) {
+        alert('Não há dados na fila para exportar.');
+        return;
+      }
+
+      const cabecalho = ['Protocolo', 'Nome do Aluno', 'Data Nasc', 'Responsavel', 'Telefone 1', 'Telefone 2', 'Curso', 'Periodo', 'Status', 'Data Inscricao', 'Atualizado Por'];
+      const linhas = listaFilaCompleta.map(item => [
+        item.protocolo || '',
+        item.nome_aluno || '',
+        item.data_nasc || '',
+        item.nome_responsavel || '',
+        item.fone1 || '',
+        item.fone2 || '',
+        item.curso || '',
+        item.periodo || '',
+        item.status || 'Aguardando',
+        item.criado_em ? new Date(item.criado_em).toLocaleString('pt-BR') : '',
+        item.atualizado_por || ''
+      ]);
+
+      const conteudoCSV = '\uFEFF' + [cabecalho, ...linhas]
+        .map(linha => linha.map(campo => `"${String(campo).replace(/"/g, '""')}"`).join(';'))
+        .join('\n');
+
+      const blob = new Blob([conteudoCSV], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `fila_cemart_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
     }
   </script>
 </body>

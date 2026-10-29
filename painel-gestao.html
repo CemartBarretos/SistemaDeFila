@@ -8,6 +8,7 @@
   <link rel="manifest" href="manifest.json" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="supabase-client.js"></script>
   <style>
     @media print {
@@ -83,6 +84,9 @@
           </button>
           <button onclick="abrirModalMensagemWa()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-2 rounded-lg text-xs font-semibold transition border border-emerald-200">
             💬 WhatsApp
+          </button>
+          <button onclick="abrirModalQrCode()" class="bg-cyan-50 hover:bg-cyan-100 text-cyan-800 px-3 py-2 rounded-lg text-xs font-semibold transition border border-cyan-200">
+            📱 QR Code
           </button>
           <button onclick="abrirModalAcessos()" class="bg-amber-50 hover:bg-amber-100 text-amber-800 px-3 py-2 rounded-lg text-xs font-semibold transition border border-amber-200">
             🔑 Acessos
@@ -347,11 +351,61 @@
         <h3 class="font-bold text-lg text-slate-800">💬 Configurar Mensagem do WhatsApp</h3>
         <button onclick="fecharModalMensagemWa()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
       </div>
+      <p class="text-xs text-slate-600">
+        Edite abaixo o modelo de mensagem utilizado na convocação. Mantenha os marcadores
+        <code class="bg-slate-100 px-1 py-0.5 rounded font-bold text-indigo-700">{nome}</code>,
+        <code class="bg-slate-100 px-1 py-0.5 rounded font-bold text-indigo-700">{curso}</code>,
+        <code class="bg-slate-100 px-1 py-0.5 rounded font-bold text-indigo-700">{periodo}</code> e
+        <code class="bg-slate-100 px-1 py-0.5 rounded font-bold text-indigo-700">{protocolo}</code>
+        para preenchimento automático dos dados de cada candidato.
+      </p>
       <textarea id="campoTextoWa" rows="11"
         class="w-full p-3 rounded-lg border border-slate-300 text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
       <div class="flex justify-end gap-2 pt-2">
         <button onclick="fecharModalMensagemWa()" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold">Cancelar</button>
         <button onclick="salvarMensagemWa()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow">Salvar no Banco</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: QR CODE DE INSCRIÇÃO ================= -->
+  <div id="modalQrCode" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-lg text-slate-800">📱 QR Code – Página de Inscrição</h3>
+        <button onclick="fecharModalQrCode()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+      </div>
+
+      <p class="text-xs text-slate-600">
+        Utilize este QR Code no balcão da secretaria ou em murais para que os munícipes acessem diretamente o formulário de inscrição pelo celular.
+      </p>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Link Público do Formulário</label>
+        <div class="flex gap-2">
+          <input type="url" id="inputUrlQrCode" oninput="gerarQrCodeVisual()"
+            class="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-cyan-500 focus:outline-none" />
+          <button type="button" onclick="copiarLinkQrCode()"
+            class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-xl text-xs font-semibold transition">
+            📋 Copiar
+          </button>
+        </div>
+      </div>
+
+      <div class="flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-2xl p-6">
+        <div id="containerQrCode" class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center justify-center"></div>
+        <span class="text-[11px] text-slate-500 mt-3 font-medium">Aponte a câmera do celular para testar</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 pt-2">
+        <button type="button" onclick="baixarQrCodePNG()"
+          class="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-2.5 px-4 rounded-xl text-xs font-semibold shadow transition flex items-center justify-center gap-1.5">
+          📥 Baixar Imagem
+        </button>
+        <button type="button" onclick="imprimirPlaquinhaQrCode()"
+          class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 px-4 rounded-xl text-xs font-semibold shadow transition flex items-center justify-center gap-1.5">
+          🖨️ Imprimir Plaquinha
+        </button>
       </div>
     </div>
   </div>
@@ -741,9 +795,9 @@ Atenciosamente,
       });
 
       document.getElementById('cardAguardando').textContent = contagens.Aguardando;
-      document.getElementById('cardConvocados').textContent = contagens.Convocados;
-      document.getElementById('cardMatriculados').textContent = contagens.Matriculados;
-      document.getElementById('cardDesistentes').textContent = contagens.Desistentes;
+      document.getElementById('cardConvocados').textContent = contagens.Convocado;
+      document.getElementById('cardMatriculados').textContent = contagens.Matriculado;
+      document.getElementById('cardDesistentes').textContent = contagens.Desistente;
     }
 
     function filtrarTabela() {
@@ -975,6 +1029,196 @@ Atenciosamente,
       mensagemWaCache = novoTexto;
       alert('Modelo de mensagem do WhatsApp atualizado com sucesso!');
       fecharModalMensagemWa();
+    }
+
+    // ================= MODAL DE QR CODE (INSCRIÇÃO PÚBLICA) =================
+    function obterUrlInscricaoPadrao() {
+      if (window.location.protocol.startsWith('http')) {
+        return window.location.origin + window.location.pathname.replace('painel-gestao.html', 'index.html');
+      }
+      return 'https://cemartbarretos.github.io/SistemaDeFila/index.html';
+    }
+
+    function abrirModalQrCode() {
+      const inputUrl = document.getElementById('inputUrlQrCode');
+      if (!inputUrl.value) {
+        inputUrl.value = obterUrlInscricaoPadrao();
+      }
+      gerarQrCodeVisual();
+      document.getElementById('modalQrCode').classList.remove('hidden');
+    }
+
+    function fecharModalQrCode() {
+      document.getElementById('modalQrCode').classList.add('hidden');
+    }
+
+    function gerarQrCodeVisual() {
+      const container = document.getElementById('containerQrCode');
+      const url = document.getElementById('inputUrlQrCode').value.trim() || obterUrlInscricaoPadrao();
+      container.innerHTML = '';
+
+      if (typeof QRCode !== 'undefined') {
+        new QRCode(container, {
+          text: url,
+          width: 220,
+          height: 220,
+          colorDark: '#0f172a',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.H
+        });
+      } else {
+        const img = document.createElement('img');
+        img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(url);
+        img.alt = 'QR Code CEMART';
+        img.width = 220;
+        img.height = 220;
+        container.appendChild(img);
+      }
+    }
+
+    function copiarLinkQrCode() {
+      const inputUrl = document.getElementById('inputUrlQrCode');
+      inputUrl.select();
+      navigator.clipboard.writeText(inputUrl.value).then(() => {
+        alert('Link copiado para a área de transferência!');
+      });
+    }
+
+    function obterDataUrlDoQrCode() {
+      const container = document.getElementById('containerQrCode');
+      const canvas = container.querySelector('canvas');
+      if (canvas) {
+        const canvasComMargem = document.createElement('canvas');
+        const margem = 24;
+        canvasComMargem.width = canvas.width + margem * 2;
+        canvasComMargem.height = canvas.height + margem * 2;
+        const ctx = canvasComMargem.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvasComMargem.width, canvasComMargem.height);
+        ctx.drawImage(canvas, margem, margem);
+        return canvasComMargem.toDataURL('image/png');
+      }
+      const img = container.querySelector('img');
+      return img ? img.src : '';
+    }
+
+    function baixarQrCodePNG() {
+      const dataUrl = obterDataUrlDoQrCode();
+      if (!dataUrl) {
+        alert('Aguarde a geração do QR Code.');
+        return;
+      }
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = 'qrcode-inscricao-cemart.png';
+      a.click();
+    }
+
+    function imprimirPlaquinhaQrCode() {
+      const dataUrl = obterDataUrlDoQrCode();
+      const urlTexto = document.getElementById('inputUrlQrCode').value.trim();
+      const janelaPrint = window.open('', '_blank', 'width=800,height=900');
+      if (!janelaPrint) {
+        alert('Permita pop-ups no navegador para imprimir a plaquinha.');
+        return;
+      }
+
+      janelaPrint.document.write(`
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+          <meta charset="UTF-8" />
+          <title>Imprimir QR Code - CEMART Barretos</title>
+          <style>
+            body {
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 95vh;
+              margin: 0;
+              background: #fff;
+              color: #0f172a;
+            }
+            .card {
+              border: 3px solid #1e293b;
+              border-radius: 24px;
+              padding: 40px 36px;
+              max-width: 480px;
+              width: 100%;
+              text-align: center;
+            }
+            .logo {
+              height: 90px;
+              object-fit: contain;
+              margin-bottom: 12px;
+            }
+            h1 {
+              font-size: 24px;
+              margin: 0 0 6px 0;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            h2 {
+              font-size: 16px;
+              color: #4f46e5;
+              margin: 0 0 24px 0;
+              text-transform: uppercase;
+            }
+            .qr-box {
+              display: inline-block;
+              padding: 16px;
+              border: 2px dashed #94a3b8;
+              border-radius: 16px;
+              margin-bottom: 24px;
+            }
+            .qr-box img {
+              width: 260px;
+              height: 260px;
+              display: block;
+            }
+            .steps {
+              text-align: left;
+              background: #f8fafc;
+              padding: 16px 20px;
+              border-radius: 12px;
+              font-size: 14px;
+              line-height: 1.6;
+              margin-bottom: 18px;
+              border: 1px solid #e2e8f0;
+            }
+            .url {
+              font-size: 11px;
+              color: #64748b;
+              word-break: break-all;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <img src="logo-cemart.png" class="logo" onerror="this.style.display='none'" />
+            <h1>CEMART Barretos</h1>
+            <h2>Inscrição Online – Oficinas Culturais</h2>
+            <div class="qr-box">
+              <img src="${dataUrl}" alt="QR Code Inscrição" />
+            </div>
+            <div class="steps">
+              <strong>Como se inscrever pelo celular:</strong><br/>
+              1. Abra a câmera do seu celular e aponte para o QR Code.<br/>
+              2. Toque no link que aparecer na tela.<br/>
+              3. Preencha os dados do candidato e anote o protocolo gerado!
+            </div>
+            <div class="url">${escaparHTML(urlTexto)}</div>
+          </div>
+          <script>
+            window.onload = function() {
+              setTimeout(function() { window.print(); }, 400);
+            };
+          <\/script>
+        </body>
+        </html>
+      `);
+      janelaPrint.document.close();
     }
 
     // ================= MODAL DE CURSOS =================

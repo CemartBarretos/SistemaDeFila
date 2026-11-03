@@ -4,7 +4,7 @@ on:
   schedule:
     # Roda automaticamente a cada 3 dias (às 08:00 UTC)
     - cron: '0 8 */3 * *'
-  workflow_dispatch: # Permite testar o clique manual no painel do GitHub
+  workflow_dispatch: # Permite testar manualmente o clique no painel do GitHub
 
 jobs:
   ping-supabase:
@@ -13,9 +13,9 @@ jobs:
       - name: Realizar requisição HTTP para evitar inatividade
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: |
-          # Faz uma consulta simples na tabela de cursos para gerar atividade na API
+          # Faz uma consulta simples na tabela de cursos utilizando a nova Publishable Key
           curl -X GET "${SUPABASE_URL}/rest/v1/cursos?select=id_curso&limit=1" \
-          -H "apikey: ${SUPABASE_ANON_KEY}" \
-          -H "Authorization: Bearer ${SUPABASE_ANON_KEY}"
+          -H "apikey: ${SUPABASE_PUBLISHABLE_KEY}" \
+          -H "Authorization: Bearer ${SUPABASE_PUBLISHABLE_KEY}"

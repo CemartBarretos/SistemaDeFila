@@ -215,7 +215,7 @@
     <div class="bg-white rounded-3xl shadow-2xl max-w-5xl w-full p-6 max-h-[92vh] flex flex-col">
       <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
         <h3 class="font-bold text-lg text-slate-800">Catálogo de Cursos e Limite de Filas</h3>
-        <button onclick="fecharModalCursos()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+        <button onclick="fecharModalCursos()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">×</button>
       </div>
 
       <form id="formCurso" onsubmit="salvarCurso(event)" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-5 space-y-3">
@@ -307,7 +307,7 @@
     <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] flex flex-col space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
         <h3 class="font-bold text-lg text-slate-800">🏛️ Gestão de Núcleos e Áreas</h3>
-        <button onclick="fecharModalNucleosAreas()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+        <button onclick="fecharModalNucleosAreas()" class="text-slate-400 hover:text-slate-600 text-xl">×</button>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-y-auto">
@@ -349,7 +349,7 @@
     <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
         <h3 class="font-bold text-lg text-slate-800">💬 Configurar Mensagem do WhatsApp</h3>
-        <button onclick="fecharModalMensagemWa()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+        <button onclick="fecharModalMensagemWa()" class="text-slate-400 hover:text-slate-600 text-xl">×</button>
       </div>
       <p class="text-xs text-slate-600">
         Edite abaixo o modelo de mensagem utilizado na convocação. Mantenha os marcadores
@@ -373,7 +373,7 @@
     <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
         <h3 class="font-bold text-lg text-slate-800">📱 QR Code – Página de Inscrição</h3>
-        <button onclick="fecharModalQrCode()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+        <button onclick="fecharModalQrCode()" class="text-slate-400 hover:text-slate-600 text-xl">×</button>
       </div>
 
       <p class="text-xs text-slate-600">
@@ -415,13 +415,23 @@
     <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
         <h3 class="font-bold text-lg text-slate-800">🔑 E-mails Autorizados</h3>
-        <button onclick="fecharModalAcessos()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+        <button onclick="fecharModalAcessos()" class="text-slate-400 hover:text-slate-600 text-xl">×</button>
       </div>
-      <form onsubmit="adicionarEmailPermitido(event)" class="flex gap-2">
+
+      <!-- Aviso exibido para operadores comuns -->
+      <div id="avisoSomenteLeituraAcessos" class="hidden p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
+        🔒 <strong>Modo de consulta:</strong> A autorização ou remoção de operadores é restrita à administração institucional do CEMART.
+      </div>
+
+      <!-- Formulário visível apenas para administradores autorizados -->
+      <form id="formAutorizarEmail" onsubmit="adicionarEmailPermitido(event)" class="flex gap-2">
         <input type="email" id="novoEmailPermitido" required placeholder="novo.servidor@barretos.sp.gov.br"
-          class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm" />
-        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-semibold">Autorizar</button>
+          class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-semibold transition shadow-sm">
+          Autorizar
+        </button>
       </form>
+
       <ul id="listaEmailsPermitidos" class="divide-y divide-slate-200 max-h-60 overflow-y-auto text-sm"></ul>
     </div>
   </div>
@@ -431,7 +441,7 @@
     <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
         <h3 class="font-bold text-lg text-slate-800">🔒 Alterar Minha Senha</h3>
-        <button onclick="fecharModalTrocaSenha()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+        <button onclick="fecharModalTrocaSenha()" class="text-slate-400 hover:text-slate-600 text-xl">×</button>
       </div>
       <form onsubmit="processarTrocaSenha(event)" class="space-y-3 text-sm">
         <div>
@@ -456,6 +466,15 @@
 
   <!-- ================= SCRIPTS E LÓGICA DO SISTEMA ================= -->
   <script>
+    // Conta institucional fixa do órgão (protegida contra exclusão)
+    const EMAIL_INSTITUCIONAL_FIXO = 'cemart@barretos.sp.gov.br';
+
+    // Contas habilitadas a gerenciar acessos (autorizar/remover operadores)
+    const EMAILS_GESTORES_ACESSO = [
+      'cemart@barretos.sp.gov.br',
+      'ca.gasparetto@gmail.com'
+    ];
+
     const emailsDaDiretoria = [
       'ca.gasparetto@gmail.com',
       'caggonca@trf3.jus.br',
@@ -485,11 +504,19 @@ Atenciosamente,
     function escaparHTML(texto) {
       if (texto === null || texto === undefined) return '';
       return String(texto)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+        .replace(/&/g, '&')
+        .replace(/</g, '<')
+        .replace(/>/g, '>')
+        .replace(/"/g, '"')
+        .replace(/'/g, ''');
+    }
+
+    function usuarioPodeGerenciarAcessos() {
+      return Boolean(
+        usuarioLogado &&
+        usuarioLogado.email &&
+        EMAILS_GESTORES_ACESSO.includes(usuarioLogado.email.trim().toLowerCase())
+      );
     }
 
     window.addEventListener('DOMContentLoaded', async () => {
@@ -829,7 +856,6 @@ Atenciosamente,
         const passaNucleo = !nucleo || mapaCursoNucleo[item.curso] === nucleo;
         const passaCurso = !curso || item.curso === curso;
         
-        // Tratamento flexível para os períodos (ex: Noite vs Noturno, Manhã vs Matutino, Tarde vs Vespertino)
         let passaPeriodo = true;
         if (periodoFiltro) {
           const pItem = (item.periodo || '').toLowerCase();
@@ -1378,20 +1404,53 @@ Atenciosamente,
     async function carregarEmailsPermitidos() {
       const { data, error } = await db.from('usuarios_permitidos').select('*').order('criado_em', { ascending: true });
       const ul = document.getElementById('listaEmailsPermitidos');
+      const formAutorizar = document.getElementById('formAutorizarEmail');
+      const avisoSomenteLeitura = document.getElementById('avisoSomenteLeituraAcessos');
+
+      const podeGerenciar = usuarioPodeGerenciarAcessos();
+
+      if (formAutorizar && avisoSomenteLeitura) {
+        if (podeGerenciar) {
+          formAutorizar.classList.remove('hidden');
+          avisoSomenteLeitura.classList.add('hidden');
+        } else {
+          formAutorizar.classList.add('hidden');
+          avisoSomenteLeitura.classList.remove('hidden');
+        }
+      }
+
       if (error || !data) {
         ul.innerHTML = '<li class="py-2 text-slate-400">Erro ao carregar lista.</li>';
         return;
       }
-      ul.innerHTML = data.map(item => `
-        <li class="py-2.5 flex items-center justify-between">
-          <span class="font-medium text-slate-700">${escaparHTML(item.email)}</span>
-          <button onclick="removerEmailPermitido(${item.id}, '${escaparHTML(item.email)}')" class="text-xs text-rose-600 hover:underline font-semibold">Remover</button>
-        </li>
-      `).join('');
+
+      ul.innerHTML = data.map(item => {
+        const ehEmailInstitucional = item.email.trim().toLowerCase() === EMAIL_INSTITUCIONAL_FIXO.toLowerCase();
+
+        let acaoHTML = '<span class="text-[11px] text-slate-400 italic">Somente leitura</span>';
+        if (ehEmailInstitucional) {
+          acaoHTML = '<span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold">Conta Institucional</span>';
+        } else if (podeGerenciar) {
+          acaoHTML = `<button onclick="removerEmailPermitido(${item.id}, '${escaparHTML(item.email)}')" class="text-xs text-rose-600 hover:underline font-semibold">Remover</button>`;
+        }
+
+        return `
+          <li class="py-2.5 flex items-center justify-between">
+            <span class="font-medium text-slate-700">${escaparHTML(item.email)}</span>
+            ${acaoHTML}
+          </li>
+        `;
+      }).join('');
     }
 
     async function adicionarEmailPermitido(event) {
       event.preventDefault();
+
+      if (!usuarioPodeGerenciarAcessos()) {
+        alert('Apenas a administração institucional possui permissão para autorizar novos usuários.');
+        return;
+      }
+
       const input = document.getElementById('novoEmailPermitido');
       const email = input.value.trim().toLowerCase();
       if (!email) return;
@@ -1406,17 +1465,37 @@ Atenciosamente,
     }
 
     async function removerEmailPermitido(id, email) {
-      if (usuarioLogado && usuarioLogado.email.toLowerCase() === email.toLowerCase()) {
-        alert('Você não pode remover o seu próprio e-mail enquanto estiver logado.');
+      if (!usuarioPodeGerenciarAcessos()) {
+        alert('Apenas a administração institucional possui permissão para remover acessos.');
         return;
       }
-      if (!confirm(`Deseja remover o acesso para ${email}?`)) return;
+
+      const emailAlvo = email.trim().toLowerCase();
+      if (emailAlvo === EMAIL_INSTITUCIONAL_FIXO.toLowerCase()) {
+        alert('A conta institucional oficial do CEMART não pode ser removida.');
+        return;
+      }
+
+      const removendoASiMesmo = usuarioLogado && usuarioLogado.email.trim().toLowerCase() === emailAlvo;
+      const mensagemConfirmacao = removendoASiMesmo
+        ? `Atenção: Você está prestes a encerrar e remover o seu próprio acesso (${email}) do sistema. Após confirmar, sua sessão será encerrada e o gerenciamento ficará exclusivo para a conta institucional do CEMART. Deseja confirmar?`
+        : `Deseja remover o acesso para ${email}?`;
+
+      if (!confirm(mensagemConfirmacao)) return;
 
       const { error } = await db.from('usuarios_permitidos').delete().eq('id', id);
       if (error) {
         alert('Erro ao remover: ' + error.message);
         return;
       }
+
+      if (removendoASiMesmo) {
+        fecharModalAcessos();
+        alert('Seu acesso foi removido com sucesso. Encerrando sessão...');
+        await realizarLogout();
+        return;
+      }
+
       await carregarEmailsPermitidos();
     }
 

@@ -410,7 +410,7 @@
     </div>
   </div>
 
-  <!-- ================= MODAL: ACESSOS ================= -->
+  <!-- ================= MODAL: ACESSOS (CENTRALIZADO NO E-MAIL INSTITUCIONAL) ================= -->
   <div id="modalAcessos" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
@@ -418,12 +418,12 @@
         <button onclick="fecharModalAcessos()" class="text-slate-400 hover:text-slate-600 text-xl">×</button>
       </div>
 
-      <!-- Aviso exibido para operadores comuns -->
+      <!-- Aviso exibido para operadores que não são o e-mail institucional mestre -->
       <div id="avisoSomenteLeituraAcessos" class="hidden p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
-        🔒 <strong>Modo de consulta:</strong> A autorização ou remoção de operadores é restrita à administração institucional do CEMART.
+        🔒 <strong>Modo de consulta:</strong> A autorização ou remoção de operadores é exclusiva da conta institucional (<strong>cemart@barretos.sp.gov.br</strong>).
       </div>
 
-      <!-- Formulário visível apenas para administradores autorizados -->
+      <!-- Formulário visível apenas para o e-mail institucional mestre -->
       <form id="formAutorizarEmail" onsubmit="adicionarEmailPermitido(event)" class="flex gap-2">
         <input type="email" id="novoEmailPermitido" required placeholder="novo.servidor@barretos.sp.gov.br"
           class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
@@ -466,14 +466,8 @@
 
   <!-- ================= SCRIPTS E LÓGICA DO SISTEMA ================= -->
   <script>
-    // Conta institucional fixa do órgão (protegida contra exclusão)
-    const EMAIL_INSTITUCIONAL_FIXO = 'cemart@barretos.sp.gov.br';
-
-    // Contas habilitadas a gerenciar acessos (autorizar/remover operadores)
-    const EMAILS_GESTORES_ACESSO = [
-      'cemart@barretos.sp.gov.br',
-      'ca.gasparetto@gmail.com'
-    ];
+    // E-mail institucional exclusivo para autorizar e remover operadores
+    const EMAIL_INSTITUCIONAL_MESTRE = 'cemart@barretos.sp.gov.br';
 
     const emailsDaDiretoria = [
       'ca.gasparetto@gmail.com',
@@ -511,11 +505,11 @@ Atenciosamente,
         .replace(/'/g, ''');
     }
 
-    function usuarioPodeGerenciarAcessos() {
+    function usuarioEhInstitucionalMestre() {
       return Boolean(
         usuarioLogado &&
         usuarioLogado.email &&
-        EMAILS_GESTORES_ACESSO.includes(usuarioLogado.email.trim().toLowerCase())
+        usuarioLogado.email.trim().toLowerCase() === EMAIL_INSTITUCIONAL_MESTRE.toLowerCase()
       );
     }
 
@@ -856,6 +850,7 @@ Atenciosamente,
         const passaNucleo = !nucleo || mapaCursoNucleo[item.curso] === nucleo;
         const passaCurso = !curso || item.curso === curso;
         
+        // Tratamento flexível para os períodos (ex: Noite vs Noturno, Manhã vs Matutino, Tarde vs Vespertino)
         let passaPeriodo = true;
         if (periodoFiltro) {
           const pItem = (item.periodo || '').toLowerCase();
@@ -1391,7 +1386,7 @@ Atenciosamente,
       renderizarListaCursosModal();
     }
 
-    // ================= MODAL DE ACESSOS =================
+    // ================= MODAL DE ACESSOS (CENTRALIZADO NO E-MAIL INSTITUCIONAL) =================
     async function abrirModalAcessos() {
       document.getElementById('modalAcessos').classList.remove('hidden');
       await carregarEmailsPermitidos();
@@ -1407,10 +1402,10 @@ Atenciosamente,
       const formAutorizar = document.getElementById('formAutorizarEmail');
       const avisoSomenteLeitura = document.getElementById('avisoSomenteLeituraAcessos');
 
-      const podeGerenciar = usuarioPodeGerenciarAcessos();
+      const souInstitucional = usuarioEhInstitucionalMestre();
 
       if (formAutorizar && avisoSomenteLeitura) {
-        if (podeGerenciar) {
+        if (souInstitucional) {
           formAutorizar.classList.remove('hidden');
           avisoSomenteLeitura.classList.add('hidden');
         } else {
@@ -1425,12 +1420,12 @@ Atenciosamente,
       }
 
       ul.innerHTML = data.map(item => {
-        const ehEmailInstitucional = item.email.trim().toLowerCase() === EMAIL_INSTITUCIONAL_FIXO.toLowerCase();
+        const ehEmailMestre = item.email.trim().toLowerCase() === EMAIL_INSTITUCIONAL_MESTRE.toLowerCase();
 
         let acaoHTML = '<span class="text-[11px] text-slate-400 italic">Somente leitura</span>';
-        if (ehEmailInstitucional) {
-          acaoHTML = '<span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold">Conta Institucional</span>';
-        } else if (podeGerenciar) {
+        if (ehEmailMestre) {
+          acaoHTML = '<span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold">Conta Mestre</span>';
+        } else if (souInstitucional) {
           acaoHTML = `<button onclick="removerEmailPermitido(${item.id}, '${escaparHTML(item.email)}')" class="text-xs text-rose-600 hover:underline font-semibold">Remover</button>`;
         }
 
@@ -1446,8 +1441,8 @@ Atenciosamente,
     async function adicionarEmailPermitido(event) {
       event.preventDefault();
 
-      if (!usuarioPodeGerenciarAcessos()) {
-        alert('Apenas a administração institucional possui permissão para autorizar novos usuários.');
+      if (!usuarioEhInstitucionalMestre()) {
+        alert('Apenas o e-mail institucional mestre (cemart@barretos.sp.gov.br) possui permissão para autorizar novos usuários.');
         return;
       }
 
@@ -1465,37 +1460,28 @@ Atenciosamente,
     }
 
     async function removerEmailPermitido(id, email) {
-      if (!usuarioPodeGerenciarAcessos()) {
-        alert('Apenas a administração institucional possui permissão para remover acessos.');
+      if (!usuarioEhInstitucionalMestre()) {
+        alert('Apenas o e-mail institucional mestre (cemart@barretos.sp.gov.br) possui permissão para remover acessos.');
         return;
       }
 
-      const emailAlvo = email.trim().toLowerCase();
-      if (emailAlvo === EMAIL_INSTITUCIONAL_FIXO.toLowerCase()) {
-        alert('A conta institucional oficial do CEMART não pode ser removida.');
+      if (email.trim().toLowerCase() === EMAIL_INSTITUCIONAL_MESTRE.toLowerCase()) {
+        alert('A conta institucional mestre não pode ser removida.');
         return;
       }
 
-      const removendoASiMesmo = usuarioLogado && usuarioLogado.email.trim().toLowerCase() === emailAlvo;
-      const mensagemConfirmacao = removendoASiMesmo
-        ? `Atenção: Você está prestes a encerrar e remover o seu próprio acesso (${email}) do sistema. Após confirmar, sua sessão será encerrada e o gerenciamento ficará exclusivo para a conta institucional do CEMART. Deseja confirmar?`
-        : `Deseja remover o acesso para ${email}?`;
+      if (usuarioLogado && usuarioLogado.email.toLowerCase() === email.toLowerCase()) {
+        alert('Você não pode remover o seu próprio e-mail enquanto estiver logado.');
+        return;
+      }
 
-      if (!confirm(mensagemConfirmacao)) return;
+      if (!confirm(`Deseja remover o acesso para ${email}?`)) return;
 
       const { error } = await db.from('usuarios_permitidos').delete().eq('id', id);
       if (error) {
         alert('Erro ao remover: ' + error.message);
         return;
       }
-
-      if (removendoASiMesmo) {
-        fecharModalAcessos();
-        alert('Seu acesso foi removido com sucesso. Encerrando sessão...');
-        await realizarLogout();
-        return;
-      }
-
       await carregarEmailsPermitidos();
     }
 

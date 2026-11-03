@@ -410,7 +410,7 @@
     </div>
   </div>
 
-  <!-- ================= MODAL: ACESSOS (CENTRALIZADO NO E-MAIL INSTITUCIONAL) ================= -->
+  <!-- ================= MODAL: ACESSOS (GESTÃO MESTRE) ================= -->
   <div id="modalAcessos" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
@@ -418,12 +418,12 @@
         <button onclick="fecharModalAcessos()" class="text-slate-400 hover:text-slate-600 text-xl">×</button>
       </div>
 
-      <!-- Aviso exibido para operadores que não são o e-mail institucional mestre -->
+      <!-- Aviso exibido para operadores que não são contas mestres -->
       <div id="avisoSomenteLeituraAcessos" class="hidden p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
-        🔒 <strong>Modo de consulta:</strong> A autorização ou remoção de operadores é exclusiva da conta institucional (<strong>cemart@barretos.sp.gov.br</strong>).
+        🔒 <strong>Modo de consulta:</strong> A autorização ou remoção de operadores é exclusiva da administração mestre (<strong>cemart@barretos.sp.gov.br</strong> / <strong>ca.gasparetto@gmail.com</strong>).
       </div>
 
-      <!-- Formulário visível apenas para o e-mail institucional mestre -->
+      <!-- Formulário visível para as contas mestres -->
       <form id="formAutorizarEmail" onsubmit="adicionarEmailPermitido(event)" class="flex gap-2">
         <input type="email" id="novoEmailPermitido" required placeholder="novo.servidor@barretos.sp.gov.br"
           class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
@@ -444,9 +444,9 @@
         <button onclick="fecharModalTrocaSenha()" class="text-slate-400 hover:text-slate-600 text-xl">×</button>
       </div>
       <form onsubmit="processarTrocaSenha(event)" class="space-y-3 text-sm">
-        <div>
+        <div id="blocoSenhaAtual">
           <label class="block text-xs font-semibold text-slate-600 mb-1">Senha Atual</label>
-          <input type="password" id="senhaAtual" required class="w-full px-3 py-2 rounded-lg border border-slate-300" />
+          <input type="password" id="senhaAtual" class="w-full px-3 py-2 rounded-lg border border-slate-300" />
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Nova Senha (mín. 6 caracteres)</label>
@@ -466,8 +466,14 @@
 
   <!-- ================= SCRIPTS E LÓGICA DO SISTEMA ================= -->
   <script>
-    // E-mail institucional exclusivo para autorizar e remover operadores
+    // E-mail institucional principal
     const EMAIL_INSTITUCIONAL_MESTRE = 'cemart@barretos.sp.gov.br';
+
+    // Contas mestres com prerrogativa de autorizar e remover operadores (incluindo acesso temporário de suporte)
+    const EMAILS_MESTRES_ACESSO = [
+      'cemart@barretos.sp.gov.br',
+      'ca.gasparetto@gmail.com'
+    ];
 
     const emailsDaDiretoria = [
       'ca.gasparetto@gmail.com',
@@ -489,34 +495,54 @@ Atenciosamente,
 *Secretaria CEMART*`;
 
     let usuarioLogado = null;
+    let modoRecuperacaoSenha = false;
     let listaFilaCompleta = [];
     let listaCursosCompleta = [];
     let listaNucleosCompleta = [];
     let listaAreasCompleta = [];
     let mensagemWaCache = MENSAGEM_WA_PADRAO;
 
+    // Função blindada contra conversão acidental de entidades HTML em editores
     function escaparHTML(texto) {
-    if (texto === null || texto === undefined) return '';
-    return String(texto)
-        .replace(/&/g, '&')
-        .replace(/</g, '<')
-        .replace(/>/g, '>')
-        .replace(/"/g, '"')
-        .replace(/'/g, ''');
-}
+      if (texto === null || texto === undefined) return '';
+      const mapa = {
+        '&': '\x26amp;',
+        '<': '\x26lt;',
+        '>': '\x26gt;',
+        '"': '\x26quot;',
+        "'": '\x26#39;'
+      };
+      return String(texto).replace(/[&<>"']/g, function(m) { return mapa[m]; });
+    }
 
     function usuarioEhInstitucionalMestre() {
-      return Boolean(
-        usuarioLogado &&
-        usuarioLogado.email &&
-        usuarioLogado.email.trim().toLowerCase() === EMAIL_INSTITUCIONAL_MESTRE.toLowerCase()
-      );
+      if (!usuarioLogado || !usuarioLogado.email) return false;
+      const emailAtual = usuarioLogado.email.trim().toLowerCase();
+      return EMAILS_MESTRES_ACESSO.includes(emailAtual);
     }
 
     window.addEventListener('DOMContentLoaded', async () => {
+      // Detecta se o usuário chegou através de um link de recuperação de senha do e-mail
+      if (window.location.hash && window.location.hash.includes('type=recovery')) {
+        modoRecuperacaoSenha = true;
+      }
+
+      db.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          modoRecuperacaoSenha = true;
+          if (session && session.user) {
+            await validarAcessoUsuario(session.user);
+            abrirModalTrocaSenha(true);
+          }
+        }
+      });
+
       const { data: { session } } = await db.auth.getSession();
       if (session && session.user) {
         await validarAcessoUsuario(session.user);
+        if (modoRecuperacaoSenha) {
+          abrirModalTrocaSenha(true);
+        }
       }
     });
 
@@ -543,14 +569,18 @@ Atenciosamente,
     }
 
     async function validarAcessoUsuario(user) {
-      const email = user.email.toLowerCase();
+      const email = (user.email || '').trim().toLowerCase();
+      const ehContaMestre = EMAILS_MESTRES_ACESSO.includes(email);
+
       const { data, error } = await db
         .from('usuarios_permitidos')
         .select('email')
         .ilike('email', email)
-        .maybeSingle();
+        .limit(1);
 
-      if (error || !data) {
+      const autorizadoNoBanco = !error && Array.isArray(data) && data.length > 0;
+
+      if (!ehContaMestre && !autorizadoNoBanco) {
         await db.auth.signOut();
         mostrarAlertaLogin('Seu e-mail não consta na lista de operadores autorizados pelo CEMART.', 'erro');
         return;
@@ -572,6 +602,7 @@ Atenciosamente,
     async function realizarLogout() {
       await db.auth.signOut();
       usuarioLogado = null;
+      modoRecuperacaoSenha = false;
       document.getElementById('conteudoPainel').classList.add('hidden');
       document.getElementById('telaLogin').classList.remove('hidden');
     }
@@ -582,7 +613,7 @@ Atenciosamente,
         mostrarAlertaLogin('Digite seu e-mail no campo acima antes de clicar em "Esqueci minha senha".', 'erro');
         return;
       }
-      const urlRedirecionamento = window.location.origin + window.location.pathname.replace('painel-gestao.html', 'redefinir-senha.html');
+      const urlRedirecionamento = window.location.origin + window.location.pathname;
       const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: urlRedirecionamento });
       if (error) {
         mostrarAlertaLogin('Erro ao enviar e-mail de recuperação: ' + error.message, 'erro');
@@ -850,7 +881,6 @@ Atenciosamente,
         const passaNucleo = !nucleo || mapaCursoNucleo[item.curso] === nucleo;
         const passaCurso = !curso || item.curso === curso;
         
-        // Tratamento flexível para os períodos (ex: Noite vs Noturno, Manhã vs Matutino, Tarde vs Vespertino)
         let passaPeriodo = true;
         if (periodoFiltro) {
           const pItem = (item.periodo || '').toLowerCase();
@@ -1386,7 +1416,7 @@ Atenciosamente,
       renderizarListaCursosModal();
     }
 
-    // ================= MODAL DE ACESSOS (CENTRALIZADO NO E-MAIL INSTITUCIONAL) =================
+    // ================= MODAL DE ACESSOS (GESTÃO MESTRE) =================
     async function abrirModalAcessos() {
       document.getElementById('modalAcessos').classList.remove('hidden');
       await carregarEmailsPermitidos();
@@ -1402,10 +1432,10 @@ Atenciosamente,
       const formAutorizar = document.getElementById('formAutorizarEmail');
       const avisoSomenteLeitura = document.getElementById('avisoSomenteLeituraAcessos');
 
-      const souInstitucional = usuarioEhInstitucionalMestre();
+      const souMestre = usuarioEhInstitucionalMestre();
 
       if (formAutorizar && avisoSomenteLeitura) {
-        if (souInstitucional) {
+        if (souMestre) {
           formAutorizar.classList.remove('hidden');
           avisoSomenteLeitura.classList.add('hidden');
         } else {
@@ -1420,12 +1450,16 @@ Atenciosamente,
       }
 
       ul.innerHTML = data.map(item => {
-        const ehEmailMestre = item.email.trim().toLowerCase() === EMAIL_INSTITUCIONAL_MESTRE.toLowerCase();
+        const emailItem = item.email.trim().toLowerCase();
+        const ehEmailInstitucionalFixo = emailItem === EMAIL_INSTITUCIONAL_MESTRE.toLowerCase();
+        const ehMeuProprioEmail = usuarioLogado && usuarioLogado.email.trim().toLowerCase() === emailItem;
 
         let acaoHTML = '<span class="text-[11px] text-slate-400 italic">Somente leitura</span>';
-        if (ehEmailMestre) {
+        if (ehEmailInstitucionalFixo) {
           acaoHTML = '<span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold">Conta Mestre</span>';
-        } else if (souInstitucional) {
+        } else if (souMestre && ehMeuProprioEmail) {
+          acaoHTML = '<span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">Admin Logado</span>';
+        } else if (souMestre) {
           acaoHTML = `<button onclick="removerEmailPermitido(${item.id}, '${escaparHTML(item.email)}')" class="text-xs text-rose-600 hover:underline font-semibold">Remover</button>`;
         }
 
@@ -1442,7 +1476,7 @@ Atenciosamente,
       event.preventDefault();
 
       if (!usuarioEhInstitucionalMestre()) {
-        alert('Apenas o e-mail institucional mestre (cemart@barretos.sp.gov.br) possui permissão para autorizar novos usuários.');
+        alert('Apenas contas mestres autorizadas possuem permissão para cadastrar novos usuários.');
         return;
       }
 
@@ -1461,7 +1495,7 @@ Atenciosamente,
 
     async function removerEmailPermitido(id, email) {
       if (!usuarioEhInstitucionalMestre()) {
-        alert('Apenas o e-mail institucional mestre (cemart@barretos.sp.gov.br) possui permissão para remover acessos.');
+        alert('Apenas contas mestres autorizadas possuem permissão para remover acessos.');
         return;
       }
 
@@ -1470,7 +1504,7 @@ Atenciosamente,
         return;
       }
 
-      if (usuarioLogado && usuarioLogado.email.toLowerCase() === email.toLowerCase()) {
+      if (usuarioLogado && usuarioLogado.email.trim().toLowerCase() === email.trim().toLowerCase()) {
         alert('Você não pode remover o seu próprio e-mail enquanto estiver logado.');
         return;
       }
@@ -1486,7 +1520,16 @@ Atenciosamente,
     }
 
     // ================= MODAL DE TROCAR SENHA =================
-    function abrirModalTrocaSenha() {
+    function abrirModalTrocaSenha(ehRecuperacao = false) {
+      const blocoAtual = document.getElementById('blocoSenhaAtual');
+      const inputAtual = document.getElementById('senhaAtual');
+      if (ehRecuperacao || modoRecuperacaoSenha) {
+        blocoAtual.classList.add('hidden');
+        inputAtual.required = false;
+      } else {
+        blocoAtual.classList.remove('hidden');
+        inputAtual.required = true;
+      }
       document.getElementById('modalTrocaSenha').classList.remove('hidden');
     }
 
@@ -1505,20 +1548,27 @@ Atenciosamente,
         return;
       }
 
-      const { error: erroAuth } = await db.auth.signInWithPassword({
-        email: usuarioLogado.email,
-        password: senhaAtual
-      });
+      if (!modoRecuperacaoSenha) {
+        const { error: erroAuth } = await db.auth.signInWithPassword({
+          email: usuarioLogado.email,
+          password: senhaAtual
+        });
 
-      if (erroAuth) {
-        alert('A senha atual informada está incorreta.');
-        return;
+        if (erroAuth) {
+          alert('A senha atual informada está incorreta.');
+          return;
+        }
       }
 
       const { error } = await db.auth.updateUser({ password: novaSenha });
       if (error) {
         alert('Erro ao atualizar a senha: ' + error.message);
         return;
+      }
+
+      modoRecuperacaoSenha = false;
+      if (window.location.hash) {
+        history.replaceState(null, null, window.location.pathname);
       }
 
       alert('Senha atualizada com sucesso!');
